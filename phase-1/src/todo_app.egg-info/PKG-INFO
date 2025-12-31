@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: todo-app
+Version: 0.1.0
+Summary: Phase 1 Todo Console App
+Requires-Python: >=3.13
