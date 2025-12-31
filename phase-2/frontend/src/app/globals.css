@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  /* Pink & White Theme Tokens */
+  --background: #ffffff; /* White bg */
+  --foreground: #1f2937; /* Gray-800 for readability */
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --primary: #db2777; /* Pink-600 */
+  --primary-foreground: #ffffff;
+  --secondary: #fdf2f8; /* Pink-50 */
+  --secondary-foreground: #9d174d; /* Pink-800 */
+  --muted: #f9fafb; /* Gray-50 */
+  --muted-foreground: #6b7280; /* Gray-500 */
+  --accent: #fbcfe8; /* Pink-200 */
+  --accent-foreground: #9d174d;
+  --border: #fce7f3; /* Pink-100 */
+  --input: #fce7f3;
+  --ring: #db2777;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
