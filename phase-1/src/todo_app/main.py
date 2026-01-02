@@ -6,6 +6,7 @@ Run this file directly or via 'python -m todo_app.main'
 """
 from .storage import TaskList
 from .ui import InteractiveUI
+from .notifications import NotificationManager
 
 
 def main() -> None:
