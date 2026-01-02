@@ -11,15 +11,21 @@ import { Button } from "@/components/ui/Button";
 interface TaskListProps {
   userId: string;
   accessToken: string;
+  initialFilter?: "all" | "pending" | "completed";
 }
 
-export function TaskList({ userId, accessToken }: TaskListProps) {
+export function TaskList({ userId, accessToken, initialFilter = "all" }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "completed">(initialFilter);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Update filter when initialFilter prop changes (from Sidebar)
+  useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
 
   // Set token for API client
   useEffect(() => {

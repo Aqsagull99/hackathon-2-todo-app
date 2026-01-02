@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { TaskList } from "@/components/tasks/TaskList";
+import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { SignJWT } from "jose";
 
 export const metadata = {
@@ -35,23 +35,10 @@ export default async function DashboardPage() {
     .sign(secret);
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="border-b border-[var(--border)] bg-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Welcome, {session.user.name || "User"}!
-          </h1>
-          <p className="text-[var(--muted-foreground)] mt-1">
-            Manage your tasks and stay productive.
-          </p>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <TaskList userId={session.user.id} accessToken={accessToken} />
-      </div>
-    </div>
+    <DashboardClient
+      userId={session.user.id}
+      accessToken={accessToken}
+      userName={session.user.name}
+    />
   );
 }
