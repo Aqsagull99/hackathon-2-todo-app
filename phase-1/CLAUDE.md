@@ -7,7 +7,7 @@ This file provides Claude Code instructions for the Todo Console Application.
 **Project**: Todo Console Application (Hackathon 2 Phase 1)
 **Language**: Python 3.13+
 **Type**: In-memory console application
-**Features**: Add, View, Complete, Update, Delete tasks
+**Features**: CRUD + Priorities, Tags, Search, Filter, Sort, Recurring Tasks, Reminders
 
 ## How to Run the App
 
