@@ -1,0 +1,12 @@
+[project]
+name = "todo-app"
+version = "0.1.0"
+description = "A simple todo console application with enhanced UI"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "rich>=13.7.0",
+]
+
+[project.scripts]
+todo = "todo_app.main:main"
