@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaCheck, FaList, FaBullseye, FaCalendarAlt, FaClock, FaStar } from 'react-icons/fa';
+import {
+  FaCheck,
+  FaList,
+  FaBullseye,
+  FaCalendarAlt,
+  FaClock,
+  FaStar,
+} from 'react-icons/fa';
+
 import QuickAddTaskCard from '@/components/features/tasks/QuickAddTaskCard';
 import WhatsNextSection from '@/components/features/tasks/WhatsNextSection';
 import HowItWorksSection from '@/components/features/tasks/HowItWorksSection';
@@ -14,7 +22,8 @@ export default function HomePage() {
     setIsMounted(true);
   }, []);
 
-  // Floating icons data
+  const headline = 'One Task at a Time'.split(' ');
+
   const floatingIcons = [
     { icon: <FaCheck className="text-pink-400" size={24} />, top: '15%', left: '10%' },
     { icon: <FaList className="text-pink-400" size={24} />, top: '25%', right: '15%' },
@@ -26,132 +35,156 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Hero Section - Centered vertically */}
-      <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden">
-        {/* Floating glassmorphism icons - only in hero */}
+      {/* ================= HERO SECTION ================= */}
+      <div className="relative min-h-screen bg-black flex items-center justify-center overflow-hidden px-4">
+
+        {/* Glow & Texture */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.15),transparent_70%)]" />
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('/noise.png')]" />
+
+        {/* Floating Icons */}
         {floatingIcons.map((item, index) => (
           <motion.div
             key={index}
-            className="absolute rounded-full bg-white/10 backdrop-blur-lg p-3 border border-white/20 shadow-lg"
+            className="absolute rounded-full bg-white/10 backdrop-blur-xl
+            p-3 border border-white/20 shadow-lg"
             style={{
               top: item.top,
               left: item.left,
               right: item.right,
               bottom: item.bottom,
             }}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: index * 0.1 }}
-            whileHover={{ scale: 1.1, rotate: 5 }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: [0, -12, 0],
+            }}
+            transition={{
+              duration: 4 + index,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
           >
             {item.icon}
           </motion.div>
         ))}
 
-        {/* Main content container - centered content in hero */}
+        {/* Hero Content */}
         <motion.div
-          className="text-center z-10 max-w-sm sm:max-w-lg md:max-w-2xl w-full px-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 20 }}
+          className="relative z-10 text-center max-w-3xl"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 30 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Main headline */}
+          {/* Animated Headline */}
           <motion.h1
-            className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 sm:mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 20 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.12 } },
+            }}
           >
-            One Task at a Time
+            {headline.map((word, i) => (
+              <motion.span
+                key={i}
+                className="inline-block mr-2"
+                variants={{
+                  hidden: { opacity: 0, y: 30, filter: 'blur(6px)' },
+                  visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
+                }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              >
+                {word}
+              </motion.span>
+            ))}
           </motion.h1>
 
-          {/* Description */}
+          {/* Subtitle */}
           <motion.p
-            className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-6 sm:mb-10 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl md:text-2xl mb-10
+            bg-gradient-to-r from-gray-300 via-pink-200 to-gray-300
+            bg-clip-text text-transparent max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 20 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
           >
             A focused Todo app designed to help you move forward without distractions.
           </motion.p>
 
-          {/* CTA Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 20 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
+          {/* CTA */}
+          <motion.button
+            className="relative px-8 py-4 rounded-full font-bold text-lg text-white
+            bg-gradient-to-r from-pink-500 to-pink-600 shadow-xl overflow-hidden"
+            animate={{
+              boxShadow: [
+                '0 0 20px rgba(236,72,153,0.4)',
+                '0 0 35px rgba(236,72,153,0.6)',
+                '0 0 20px rgba(236,72,153,0.4)',
+              ],
+            }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => (window.location.href = '/register')}
           >
-            <motion.button
-              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-base sm:text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                // Navigate to signup page
-                window.location.href = '/register';
-              }}
-            >
-              Get Started
-            </motion.button>
-          </motion.div>
+            Get Started
+          </motion.button>
         </motion.div>
-
-        {/* Additional floating elements for depth - only in hero */}
-        <div className="absolute top-1/4 left-1/4 w-16 h-16 rounded-full bg-pink-500/10 blur-xl"></div>
-        <div className="absolute bottom-1/3 right-1/3 w-24 h-24 rounded-full bg-pink-500/10 blur-xl"></div>
-        <div className="absolute top-1/2 right-1/4 w-20 h-20 rounded-full bg-pink-500/10 blur-xl"></div>
       </div>
 
-      {/* Features Section - Below hero, normal vertical flow */}
-      <div className="relative z-10 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl sm:max-w-5xl md:max-w-6xl mx-auto">
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.6 }}
-          >
-            {/* Quick Add Task Card */}
-            <div className="flex justify-center items-center">
-              <QuickAddTaskCard className="w-full max-w-sm" />
-            </div>
+      {/* ================= FEATURES ================= */}
+      <div className="py-20 px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
-            {/* Focus Mode Card */}
-            <motion.div
-              className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 sm:p-6 text-center"
-              whileHover={{ y: -10, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">Focus Mode</h3>
-              <p className="text-sm sm:text-base text-gray-300">Stay focused with our distraction-free environment.</p>
-            </motion.div>
+          <QuickAddTaskCard />
 
-            {/* Productivity Tracking Card */}
+          {[
+            {
+              title: 'Focus Mode',
+              desc: 'Stay focused with a distraction-free environment.',
+              icon: (
+                <FaBullseye className="text-pink-400 w-7 h-7" />
+              ),
+            },
+            {
+              title: 'Productivity Tracking',
+              desc: 'Track progress and build productive habits.',
+              icon: (
+                <FaCalendarAlt className="text-pink-400 w-7 h-7" />
+              ),
+            },
+          ].map((item, i) => (
             <motion.div
-              className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 sm:p-6 text-center"
-              whileHover={{ y: -10, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              key={i}
+              className="rounded-2xl border border-white/10 bg-white/5
+              backdrop-blur-xl p-6 text-center"
+              whileHover={{
+                y: -12,
+                scale: 1.04,
+                boxShadow: '0 20px 40px rgba(236,72,153,0.15)',
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-pink-500/20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
+              <div
+                className="w-16 h-16 mx-auto mb-4 rounded-full bg-pink-500/20
+                flex items-center justify-center
+                shadow-[0_0_20px_rgba(236,72,153,0.4)]"
+              >
+                {item.icon}
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">Productivity Tracking</h3>
-              <p className="text-sm sm:text-base text-gray-300">Track your progress and improve your productivity over time.</p>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                {item.title}
+              </h3>
+              <p className="text-gray-300">{item.desc}</p>
             </motion.div>
-          </motion.div>
+          ))}
         </div>
       </div>
 
-      {/* What's Next Section - Below features, normal vertical flow */}
+      {/* ================= NEXT SECTIONS ================= */}
       <WhatsNextSection />
-
-      {/* How It Works Section - Below What's Next, normal vertical flow */}
       <HowItWorksSection />
     </>
   );

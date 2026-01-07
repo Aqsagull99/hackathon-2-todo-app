@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 
 class ReminderStatus(str, Enum):
     """Reminder status states."""
-    PENDING = "pending"
-    SENT = "sent"
-    SNOOZED = "snoozed"
-    DISMISSED = "dismissed"
+    PENDING = "PENDING"
+    SENT = "SENT"
+    SNOOZED = "SNOOZED"
+    DISMISSED = "DISMISSED"
 
 
 class Reminder(SQLModel, table=True):
@@ -29,7 +29,7 @@ class Reminder(SQLModel, table=True):
     due_time: datetime = Field(nullable=False, description="When reminder should trigger")
     status: ReminderStatus = Field(
         sa_column=Column(
-            SAEnum(ReminderStatus, name="reminder_status", values_callable=lambda x: [e.value for e in x]),
+            SAEnum(ReminderStatus, name="reminderstatus", values_callable=lambda x: [e.value for e in x]),
             default=ReminderStatus.PENDING,
             nullable=False
         )

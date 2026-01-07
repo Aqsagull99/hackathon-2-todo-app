@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Task, TaskCreate, TaskUpdate } from "@/types";
+import type { Task, TaskCreate, TaskUpdate, TaskExtendedCreate, TaskExtendedUpdate } from "@/types";
 import { api } from "@/lib/api";
 import { TaskItem } from "./TaskItem";
 import { TaskForm } from "./TaskForm";
@@ -40,7 +40,6 @@ export function TaskList({ userId, accessToken, initialFilter = "all", initialSh
     try {
       const response = await api.getTasks(userId, {
         status: filter === "all" ? undefined : filter,
-        limit: 100,
       });
       setTasks(response.tasks);
     } catch (err) {
@@ -55,27 +54,31 @@ export function TaskList({ userId, accessToken, initialFilter = "all", initialSh
   }, [fetchTasks]);
 
   // Create task
-  const handleCreate = async (data: TaskCreate) => {
+  const handleCreate = async (data: TaskExtendedCreate) => {
     const newTask = await api.createTask(userId, data);
     setTasks((prev) => [newTask, ...prev]);
     setShowForm(false);
+    return newTask;
   };
 
   // Update task
-  const handleUpdate = async (data: TaskUpdate) => {
-    if (!editingTask) return;
+  const handleUpdate = async (data: TaskExtendedUpdate) => {
+    if (!editingTask) {
+      throw new Error("No task selected for update");
+    }
     const updatedTask = await api.updateTask(userId, editingTask.id, data);
     setTasks((prev) =>
       prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
     );
     setEditingTask(null);
+    return updatedTask;
   };
 
   // Toggle task
   const handleToggle = async (taskId: number) => {
-    const updatedTask = await api.toggleTask(userId, taskId);
+    const response = await api.toggleTask(userId, taskId);
     setTasks((prev) =>
-      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+      prev.map((t) => (t.id === response.completed_task.id ? response.completed_task : t))
     );
   };
 
@@ -122,11 +125,12 @@ export function TaskList({ userId, accessToken, initialFilter = "all", initialSh
           {(showForm || editingTask) && (
             <TaskForm
               task={editingTask}
+              userId={userId}
               onSubmit={async (data) => {
                 if (editingTask) {
-                  await handleUpdate(data as TaskUpdate);
+                  return await handleUpdate(data as TaskExtendedUpdate);
                 } else {
-                  await handleCreate(data as TaskCreate);
+                  return await handleCreate(data as TaskExtendedCreate);
                 }
               }}
               onCancel={() => {

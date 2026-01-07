@@ -1,7 +1,7 @@
 """Extended Task CRUD API routes with search, filter, and recurring support."""
 
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Path, status
 from sqlalchemy.orm.attributes import set_committed_value

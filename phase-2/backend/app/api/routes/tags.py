@@ -2,6 +2,7 @@
 
 from typing import List
 
+from sqlalchemy import select
 from fastapi import APIRouter, HTTPException, Query, Path, status
 
 from app.api.deps import DBSession, VerifiedUserId
@@ -41,10 +42,17 @@ async def list_tags(
         )
         task_count = result.scalar() or 0
 
-        tags_with_counts.append({
-            **tag.__dict__,
+        # Convert to dict manually to avoid SQLAlchemy internal objects
+        tag_dict = {
+            "id": tag.id,
+            "user_id": tag.user_id,
+            "name": tag.name,
+            "color": tag.color,
+            "created_at": tag.created_at,
+            "updated_at": tag.updated_at,
             "task_count": task_count,
-        })
+        }
+        tags_with_counts.append(tag_dict)
 
     return {"tags": tags_with_counts}
 

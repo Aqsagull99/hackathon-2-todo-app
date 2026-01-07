@@ -159,6 +159,7 @@ def tag_to_dict(tag: Tag) -> dict:
     """
     return {
         "id": tag.id,
+        "user_id": tag.user_id,
         "name": tag.name,
         "color": tag.color,
         "created_at": tag.created_at.isoformat(),
