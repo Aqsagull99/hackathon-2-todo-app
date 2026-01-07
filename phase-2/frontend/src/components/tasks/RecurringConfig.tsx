@@ -11,8 +11,8 @@ interface RecurringConfigProps {
 export function RecurringConfig({ value, onChange }: RecurringConfigProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const patterns = [
-    { value: null as RecurrencePattern | null, label: "Does not repeat" },
+  const patterns: Array<{ value: RecurrencePattern | null; label: string }> = [
+    { value: null, label: "Does not repeat" },
     { value: "daily", label: "Daily" },
     { value: "weekly", label: "Weekly" },
     { value: "monthly", label: "Monthly" },
@@ -65,7 +65,7 @@ export function RecurringConfig({ value, onChange }: RecurringConfigProps) {
           border border-pink-500/30 rounded-lg shadow-xl overflow-hidden">
           {patterns.map((pattern) => (
             <button
-              key={pattern.value || "none"}
+              key={pattern.value === null ? "none" : pattern.value}
               onClick={() => {
                 onChange(pattern.value);
                 setIsOpen(false);

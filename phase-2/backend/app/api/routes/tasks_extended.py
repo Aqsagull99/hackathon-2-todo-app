@@ -1,7 +1,7 @@
 """Extended Task CRUD API routes with search, filter, and recurring support."""
 
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query, Path, status
 from sqlalchemy.orm.attributes import set_committed_value
@@ -131,11 +131,26 @@ async def create_task_extended(
             if tag:
                 await tag_service.add_tag_to_task(db, task.id, tag_id)
 
-    # Load tags for response (avoid lazy-load on relationship assignment in async)
+    # Load tags for response and build dict manually to avoid lazy-load issues
     tags = await tag_service.get_tag_for_task(db, task.id)
-    set_committed_value(task, "tags", tags)
 
-    return search_service.task_to_dict(task)
+    # Manually build response dict instead of using task_to_dict which accesses task.tags
+    return {
+        "id": task.id,
+        "user_id": task.user_id,
+        "title": task.title,
+        "description": task.description,
+        "completed": task.completed,
+        "priority": task.priority.value if task.priority else None,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "due_date_tz": task.due_date_tz,
+        "recurrence_pattern": task.recurrence_pattern.value if task.recurrence_pattern else None,
+        "recurrence_parent_id": task.recurrence_parent_id,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat(),
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "tags": [{"id": t.id, "name": t.name, "color": t.color, "created_at": t.created_at.isoformat(), "user_id": t.user_id} for t in tags],
+    }
 
 
 @router.get("/tasks/{task_id}", response_model=TaskResponseExtended)

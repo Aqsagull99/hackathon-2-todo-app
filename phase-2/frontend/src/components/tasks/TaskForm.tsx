@@ -77,9 +77,9 @@ export function TaskForm({ task, userId, onSubmit, onCancel }: TaskFormProps) {
         title: title.trim(),
         description: description.trim() || null,
         priority,
-        due_date: dueDate,
+        due_date: dueDate || undefined,
         due_date_tz: dueDate ? timeZone : undefined,
-        recurrence_pattern: recurrence,
+        recurrence_pattern: recurrence || undefined,
         tag_ids: selectedTagIds,
       };
 

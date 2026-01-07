@@ -36,6 +36,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3002",
         settings.FRONTEND_URL,
     ],
     allow_credentials=True,
@@ -44,6 +46,9 @@ app.add_middleware(
     # Add this to ensure CORS headers are applied even to error responses
     allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):[0-9]+",
 )
+
+
+
 
 # Include routers
 app.include_router(health.router)
@@ -61,3 +66,5 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs",
     }
+
+

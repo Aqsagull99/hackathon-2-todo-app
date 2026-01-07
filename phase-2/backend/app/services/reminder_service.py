@@ -64,13 +64,17 @@ async def get_reminder_for_task(
     Returns:
         Reminder if found, None otherwise
     """
+    # Get all reminders for the task
     result = await db.execute(
-        select(Reminder).where(
-            Reminder.task_id == task_id,
-            Reminder.status == ReminderStatus.PENDING,
-        )
+        select(Reminder).where(Reminder.task_id == task_id)
     )
-    return result.scalar_one_or_none()
+    reminders = result.scalars().all()
+
+    # Filter by PENDING status in Python (avoids enum comparison issues)
+    for reminder in reminders:
+        if reminder.status == ReminderStatus.PENDING:
+            return reminder
+    return None
 
 
 async def get_reminder(
@@ -202,13 +206,11 @@ async def get_pending_reminders(
     now = datetime.utcnow()
 
     result = await db.execute(
-        select(Reminder).where(
-            Reminder.status == ReminderStatus.PENDING,
-            Reminder.due_time <= now,
-        )
+        select(Reminder).where(Reminder.due_time <= now)
         .order_by(Reminder.due_time.asc())
     )
-    return list(result.scalars().all())
+    # Filter by PENDING status in Python
+    return [r for r in result.scalars().all() if r.status == ReminderStatus.PENDING]
 
 
 async def delete_reminder(

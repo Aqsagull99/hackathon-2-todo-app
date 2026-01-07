@@ -10,7 +10,7 @@ interface QuickAddTaskCardProps {
 }
 
 export default function QuickAddTaskCard({ className = '' }: QuickAddTaskCardProps) {
-  const { data: session, isLoading } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   const isClient = typeof window !== 'undefined';
 
@@ -25,7 +25,7 @@ export default function QuickAddTaskCard({ className = '' }: QuickAddTaskCardPro
   };
 
   // Show loading state while checking auth status or if not client-side rendered
-  if (isLoading || !isClient) {
+  if (isPending || !isClient) {
     return (
       <motion.div
         className={`relative rounded-2xl border border-pink-500/20 bg-black/20 backdrop-blur-xl p-6 shadow-lg cursor-not-allowed ${className}`}

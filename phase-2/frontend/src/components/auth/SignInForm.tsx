@@ -13,7 +13,7 @@ import {
 } from "./AuthComponents";
 import { cn } from "@/lib/utils";
 
-type SocialProvider = "facebook" | "instagram" | "pinterest";
+type SocialProvider = "facebook" | "google";
 
 interface SignInFormProps {
   onSocialSignIn?: (provider: SocialProvider) => void;
@@ -113,7 +113,12 @@ export function SignInForm({ onSocialSignIn }: SignInFormProps) {
   const handleSocialSignIn = async (provider: SocialProvider) => {
     setSocialLoading(provider);
     try {
-      await signIn.social({ provider });
+      // For social sign-in, we need to redirect to the provider's OAuth page
+      if (provider === 'google') {
+        window.location.href = '/api/auth/google';
+      } else if (provider === 'facebook') {
+        window.location.href = '/api/auth/facebook';
+      }
     } catch (err) {
       setGeneralError(
         err instanceof Error ? err.message : `${provider} sign in failed. Please try again.`
@@ -273,16 +278,10 @@ export function SignInForm({ onSocialSignIn }: SignInFormProps) {
                   isLoading={socialLoading === "facebook"}
                 />
                 <SocialButton
-                  provider="instagram"
-                  onClick={() => handleSocialSignIn("instagram")}
-                  label="Sign in with Instagram"
-                  isLoading={socialLoading === "instagram"}
-                />
-                <SocialButton
-                  provider="pinterest"
-                  onClick={() => handleSocialSignIn("pinterest")}
-                  label="Sign in with Pinterest"
-                  isLoading={socialLoading === "pinterest"}
+                  provider="google"
+                  onClick={() => handleSocialSignIn("google")}
+                  label="Sign in with Google"
+                  isLoading={socialLoading === "google"}
                 />
               </div>
 

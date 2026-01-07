@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class TaskPriority(str, Enum):
@@ -23,10 +23,10 @@ class RecurrencePattern(str, Enum):
 
 class ReminderStatus(str, Enum):
     """Reminder notification status."""
-    PENDING = "pending"
-    SENT = "sent"
-    SNOOZED = "snoozed"
-    DISMISSED = "dismissed"
+    PENDING = "PENDING"
+    SENT = "SENT"
+    SNOOZED = "SNOOZED"
+    DISMISSED = "DISMISSED"
 
 
 # ============================================================================
@@ -75,7 +75,14 @@ class ReminderBase(BaseModel):
 
 class ReminderCreate(ReminderBase):
     """Schema for creating a reminder."""
-    pass
+
+    @field_validator('due_time')
+    @classmethod
+    def strip_timezone_from_due_time(cls, v):
+        """Strip timezone info from due_time since DB uses TIMESTAMP WITHOUT TIME ZONE."""
+        if v is not None and isinstance(v, datetime) and v.tzinfo is not None:
+            return v.replace(tzinfo=None)
+        return v
 
 
 class ReminderUpdate(BaseModel):
@@ -111,6 +118,14 @@ class TaskCreateExtended(BaseModel):
     recurrence_pattern: Optional[RecurrencePattern] = None
     tag_ids: Optional[List[int]] = None
 
+    @field_validator('due_date')
+    @classmethod
+    def strip_timezone_from_due_date(cls, v):
+        """Strip timezone info from due_date since DB uses TIMESTAMP WITHOUT TIME ZONE."""
+        if v is not None and isinstance(v, datetime) and v.tzinfo is not None:
+            return v.replace(tzinfo=None)
+        return v
+
 
 class TaskUpdateExtended(BaseModel):
     """Schema for updating a task with extended features."""
@@ -121,6 +136,14 @@ class TaskUpdateExtended(BaseModel):
     due_date: Optional[datetime] = None
     due_date_tz: Optional[str] = Field(None, max_length=50)
     recurrence_pattern: Optional[RecurrencePattern] = None
+
+    @field_validator('due_date')
+    @classmethod
+    def strip_timezone_from_due_date(cls, v):
+        """Strip timezone info from due_date since DB uses TIMESTAMP WITHOUT TIME ZONE."""
+        if v is not None and isinstance(v, datetime) and v.tzinfo is not None:
+            return v.replace(tzinfo=None)
+        return v
 
 
 class TaskResponseExtended(BaseModel):
