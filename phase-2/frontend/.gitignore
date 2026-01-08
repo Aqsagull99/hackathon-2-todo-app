@@ -36,9 +36,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Allow .env.production for Vercel config
-!.env.production
+.env.production
 
 # database
 auth.db
