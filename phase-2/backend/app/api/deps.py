@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Path
+from fastapi import Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -27,7 +27,7 @@ async def get_verified_user_id(
     Returns:
         Verified user ID
     """
-    return await verify_user_access(user_id, current_user)
+    return await verify_user_access(user_id, current_user=current_user)
 
 
 async def get_current_user_id(
