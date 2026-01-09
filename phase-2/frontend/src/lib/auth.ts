@@ -18,6 +18,7 @@ export const pool = globalForPool.pool ?? new Pool({
 if (process.env.NODE_ENV !== "production") globalForPool.pool = pool;
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
   database: pool,
   emailAndPassword: {
     enabled: true,
