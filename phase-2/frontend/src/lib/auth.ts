@@ -20,6 +20,10 @@ if (process.env.NODE_ENV !== "production") globalForPool.pool = pool;
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   database: pool,
+  trustedOrigins: [
+    "https://hackathon-2-todo-app-theta.vercel.app",
+    "http://localhost:3000"
+  ],
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
