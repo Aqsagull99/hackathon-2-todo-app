@@ -1,0 +1,205 @@
+{
+  "mcp_version": "1.0",
+  "server_name": "todo-mcp-server",
+  "tools": [
+    {
+      "name": "add_task",
+      "description": "Create a new task for the user with optional tags",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "User identifier (auto-injected from JWT)"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Task title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Optional task description"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "default": "medium",
+            "description": "Task priority level"
+          },
+          "tag_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Optional list of tag IDs to associate"
+          }
+        },
+        "required": ["user_id", "title"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_id": {"type": "integer"},
+          "status": {"type": "string", "enum": ["created", "failed"]},
+          "title": {"type": "string"},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "list_tasks",
+      "description": "Retrieve user's tasks with optional filters and sorting",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {"type": "string", "format": "uuid"},
+          "status": {
+            "type": "string",
+            "enum": ["all", "pending", "completed"],
+            "default": "all",
+            "description": "Filter by completion status"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Filter by priority level"
+          },
+          "tag_query": {
+            "type": "string",
+            "description": "Filter by tag name (partial match)"
+          },
+          "search_query": {
+            "type": "string",
+            "description": "Search by keyword in title or description (partial match, case-insensitive)"
+          },
+          "sort_by": {
+            "type": "string",
+            "enum": ["priority", "due_date", "title", "created_at"],
+            "default": "created_at",
+            "description": "Sort field"
+          }
+        },
+        "required": ["user_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "integer"},
+                "title": {"type": "string"},
+                "description": {"type": "string"},
+                "completed": {"type": "boolean"},
+                "priority": {"type": "string"},
+                "due_date": {"type": "string", "format": "date-time"},
+                "tags": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          },
+          "count": {"type": "integer"}
+        }
+      }
+    },
+    {
+      "name": "complete_task",
+      "description": "Mark a task as complete",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {"type": "string", "format": "uuid"},
+          "task_id": {"type": "integer", "description": "ID of task to complete"}
+        },
+        "required": ["user_id", "task_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_id": {"type": "integer"},
+          "status": {"type": "string", "enum": ["completed", "failed"]},
+          "title": {"type": "string"},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "delete_task",
+      "description": "Permanently delete a task",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {"type": "string", "format": "uuid"},
+          "task_id": {"type": "integer", "description": "ID of task to delete"}
+        },
+        "required": ["user_id", "task_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_id": {"type": "integer"},
+          "status": {"type": "string", "enum": ["deleted", "failed"]},
+          "title": {"type": "string"},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "update_task",
+      "description": "Update task fields (title, description, priority)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {"type": "string", "format": "uuid"},
+          "task_id": {"type": "integer"},
+          "title": {"type": "string", "minLength": 1, "maxLength": 200},
+          "description": {"type": "string", "maxLength": 1000},
+          "priority": {"type": "string", "enum": ["high", "medium", "low"]}
+        },
+        "required": ["user_id", "task_id"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_id": {"type": "integer"},
+          "status": {"type": "string", "enum": ["updated", "failed"]},
+          "title": {"type": "string"},
+          "error": {"type": "string"}
+        }
+      }
+    },
+    {
+      "name": "add_tag_to_task",
+      "description": "Add or create a tag and associate it with a task",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_id": {"type": "string", "format": "uuid"},
+          "task_id": {"type": "integer"},
+          "tag_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Tag name (created if doesn't exist)"
+          }
+        },
+        "required": ["user_id", "task_id", "tag_name"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "task_id": {"type": "integer"},
+          "tag_name": {"type": "string"},
+          "status": {"type": "string", "enum": ["tagged", "already_tagged", "failed"]},
+          "error": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

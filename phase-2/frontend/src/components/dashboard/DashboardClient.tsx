@@ -20,6 +20,7 @@ import { api } from "@/lib/api";
 import type { Task, TaskCreate, TaskExtendedCreate, RecurringCompleteResponse } from "@/types";
 import { cn } from "@/lib/utils";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
+import dynamic from 'next/dynamic';
 
 interface DashboardClientProps {
   userId: string;
@@ -27,6 +28,12 @@ interface DashboardClientProps {
   userName: string | null;
   initialShowAddTask?: boolean;
 }
+
+// Dynamically import ChatIcon with SSR disabled for lazy loading
+const DynamicChatIcon = dynamic(() => import('../chat/ChatIcon'), {
+  ssr: false,
+  loading: () => null, // Don't show a loading spinner, just render nothing until loaded
+});
 
 export function DashboardClient({ userId, accessToken, userName, initialShowAddTask = false }: DashboardClientProps) {
   const [currentFilter, setCurrentFilter] = useState<"all" | "pending" | "completed">("all");
@@ -51,23 +58,23 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
   }, [accessToken]);
 
   // Fetch tasks
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await api.getTasks(userId, {
-          status: currentFilter === "all" ? undefined : currentFilter,
-          page_size: 100,
-        });
-        setTasks(response.tasks);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch tasks");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchTasks = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.getTasks(userId, {
+        status: currentFilter === "all" ? undefined : currentFilter,
+        page_size: 100,
+      });
+      setTasks(response.tasks);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch tasks");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTasks();
   }, [userId, currentFilter, accessToken]);
 
@@ -753,6 +760,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
         </div>
       </div>
     </div>
+    <DynamicChatIcon position="bottom-right" accessToken={accessToken} userId={userId} onTaskCreated={fetchTasks} />
     </NotificationProvider>
   );
 }

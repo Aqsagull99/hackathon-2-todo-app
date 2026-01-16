@@ -16,6 +16,8 @@ import type {
   Reminder,
   ReminderCreate,
   RecurringCompleteResponse,
+  ChatRequest,
+  ChatResponse,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -62,7 +64,20 @@ class ApiClient {
 
 
   // ============================================================================
+  // Chat Endpoints
+  // ============================================================================
+
+  async sendMessage(_userId: string, conversationId: string | null, message: string): Promise<ChatResponse> {
+    const payload: ChatRequest = { conversation_id: conversationId || undefined, message };
+    return this.request<ChatResponse>(`/api/chat/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // ============================================================================
   // Task Endpoints (Extended with search/filter/sort)
+
   // ============================================================================
 
   async getTasks(

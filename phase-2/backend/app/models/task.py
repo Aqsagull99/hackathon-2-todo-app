@@ -58,6 +58,13 @@ class Task(SQLModel, table=True):
         max_length=50,
         description="Timezone for due_date (e.g., 'America/New_York')"
     )
+    reminder: Optional[datetime] = Field(default=None, nullable=True)
+    reminder_time: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        nullable=True,
+        description="Reminder time as string (e.g., '7am', '3:30pm')"
+    )
     recurrence_pattern: Optional[RecurrencePattern] = Field(
         sa_column=Column(
             SAEnum(RecurrencePattern, name="recurrence_pattern", values_callable=lambda x: [e.value for e in x]),

@@ -5,14 +5,14 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Path, status
 
 from app.api.deps import DBSession, VerifiedUserId
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
+from app.schemas.task import TaskCreate, TaskUpdate, TaskRead
 from app.services import task_service
 
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
 
-@router.get("/{user_id}/tasks", response_model=TaskListResponse)
+@router.get("/{user_id}/tasks", response_model=list[TaskRead])
 async def list_tasks(
     user_id: VerifiedUserId,
     db: DBSession,
@@ -23,7 +23,7 @@ async def list_tasks(
         pattern="^(all|pending|completed)$",
         description="Filter by status",
     ),
-) -> TaskListResponse:
+):
     """List all tasks for a user with pagination.
 
     - **user_id**: Owner's user ID
@@ -34,24 +34,21 @@ async def list_tasks(
     tasks, total = await task_service.get_tasks(
         db, user_id, skip=skip, limit=limit, status=status
     )
-    return TaskListResponse(
-        tasks=[TaskResponse.model_validate(t) for t in tasks],
-        total=total,
-        skip=skip,
-        limit=limit,
-    )
+    # The response needs to handle the total count differently if using pagination model
+    # But for now, returning just the list of tasks as per response_model
+    return [TaskRead.model_validate(t) for t in tasks]
 
 
 @router.post(
     "/{user_id}/tasks",
-    response_model=TaskResponse,
+    response_model=TaskRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_task(
     user_id: VerifiedUserId,
     task_data: TaskCreate,
     db: DBSession,
-) -> TaskResponse:
+) -> TaskRead:
     """Create a new task.
 
     - **user_id**: Owner's user ID
@@ -59,15 +56,15 @@ async def create_task(
     - **description**: Task description (optional, max 1000 chars)
     """
     task = await task_service.create_task(db, user_id, task_data)
-    return TaskResponse.model_validate(task)
+    return TaskRead.model_validate(task)
 
 
-@router.get("/{user_id}/tasks/{task_id}", response_model=TaskResponse)
+@router.get("/{user_id}/tasks/{task_id}", response_model=TaskRead)
 async def get_task(
     user_id: VerifiedUserId,
     task_id: int = Path(..., ge=1, description="Task ID"),
     db: DBSession = None,
-) -> TaskResponse:
+) -> TaskRead:
     """Get a specific task by ID.
 
     - **user_id**: Owner's user ID
@@ -79,16 +76,16 @@ async def get_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task {task_id} not found",
         )
-    return TaskResponse.model_validate(task)
+    return TaskRead.model_validate(task)
 
 
-@router.put("/{user_id}/tasks/{task_id}", response_model=TaskResponse)
+@router.put("/{user_id}/tasks/{task_id}", response_model=TaskRead)
 async def update_task(
     user_id: VerifiedUserId,
     task_data: TaskUpdate,
     task_id: int = Path(..., ge=1, description="Task ID"),
     db: DBSession = None,
-) -> TaskResponse:
+) -> TaskRead:
     """Update an existing task.
 
     - **user_id**: Owner's user ID
@@ -105,7 +102,7 @@ async def update_task(
         )
 
     updated_task = await task_service.update_task(db, task, task_data)
-    return TaskResponse.model_validate(updated_task)
+    return TaskRead.model_validate(updated_task)
 
 
 @router.delete(
@@ -134,13 +131,13 @@ async def delete_task(
 
 @router.patch(
     "/{user_id}/tasks/{task_id}/complete",
-    response_model=TaskResponse,
+    response_model=TaskRead,
 )
 async def toggle_task_completion(
     user_id: VerifiedUserId,
     task_id: int = Path(..., ge=1, description="Task ID"),
     db: DBSession = None,
-) -> TaskResponse:
+) -> TaskRead:
     """Toggle task completion status.
 
     - **user_id**: Owner's user ID
@@ -154,4 +151,4 @@ async def toggle_task_completion(
         )
 
     updated_task = await task_service.toggle_task_completion(db, task)
-    return TaskResponse.model_validate(updated_task)
+    return TaskRead.model_validate(updated_task)
