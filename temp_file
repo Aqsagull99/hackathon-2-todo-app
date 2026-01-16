@@ -1,0 +1,315 @@
+"""
+Chat Agent Implementation using OpenAI Agents SDK with OpenRouter integration
+Based on openai-agents-sdk-skill specification
+"""
+
+import os
+from typing import Dict, List, Optional
+from pydantic import BaseModel, Field
+import asyncio
+
+from agents import Agent, Runner
+from agents import AsyncOpenAI, OpenAIChatCompletionsModel
+from agents.run import RunConfig
+from agents import function_tool
+from agents.mcp import MCPServerStdio
+from datetime import datetime
+
+
+class Task(BaseModel):
+    """Represents a task in the todo list."""
+    id: int = Field(description="Unique task identifier")
+    title: str = Field(description="Task title")
+    description: Optional[str] = Field(default=None, description="Task description")
+    completed: bool = Field(default=False, description="Whether task is completed")
+    priority: str = Field(default="medium", description="Task priority: low, medium, high")
+
+
+class AddTaskParams(BaseModel):
+    """Parameters for adding a new task."""
+    user_id: str = Field(description="The user's unique identifier")
+    title: str = Field(description="Task title")
+    description: Optional[str] = Field(default=None, description="Task description")
+    priority: str = Field(default="medium", description="Task priority: low, medium, high")
+
+
+class UpdateTaskParams(BaseModel):
+    """Parameters for updating an existing task."""
+    user_id: str = Field(description="The user's unique identifier")
+    task_id: int = Field(description="The ID of the task to update")
+    title: Optional[str] = Field(default=None, description="New title for the task")
+    description: Optional[str] = Field(default=None, description="New description for the task")
+    priority: Optional[str] = Field(default=None, description="New priority level for the task")
+
+
+class CompleteTaskParams(BaseModel):
+    """Parameters for completing a task."""
+    user_id: str = Field(description="The user's unique identifier")
+    task_id: int = Field(description="The ID of the task to complete")
+
+
+class DeleteTaskParams(BaseModel):
+    """Parameters for deleting a task."""
+    user_id: str = Field(description="The user's unique identifier")
+    task_id: int = Field(description="The ID of the task to delete")
+
+
+class ListTasksParams(BaseModel):
+    """Parameters for listing tasks."""
+    user_id: str = Field(description="The user's unique identifier")
+    status: Optional[str] = Field(default="all", description="Filter tasks by status: all, pending, completed")
+    priority: Optional[str] = Field(default=None, description="Filter tasks by priority level")
+    tag_query: Optional[str] = Field(default=None, description="Filter tasks by tag name")
+    search_query: Optional[str] = Field(default=None, description="Keyword search in task titles or descriptions")
+    sort_by: Optional[str] = Field(default="created_at", description="Sort results by: created_at, priority, title, due_date")
+
+
+class AddTagToTaskParams(BaseModel):
+    """Parameters for adding a tag to a task."""
+    user_id: str = Field(description="The user's unique identifier")
+    task_id: int = Field(description="The ID of the task to add the tag to")
+    tag_name: str = Field(description="The name of the tag to add")
+
+
+class ContextManager:
+    """Manage conversational history and context for the agent."""
+
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.history = self._initialize_history()
+
+    def _initialize_history(self) -> List[Dict[str, any]]:
+        """Initialize conversation history with system message."""
+        return [
+            {"role": "system", "content": f"You are a helpful todo assistant for user {self.user_id}. Today is {datetime.now().strftime('%Y-%m-%d')}."},
+        ]
+
+    def add_user_message(self, message: str):
+        """Add user message to history."""
+        self.history.append({"role": "user", "content": message})
+
+    def add_assistant_response(self, response: str):
+        """Add assistant response to history."""
+        self.history.append({"role": "assistant", "content": response})
+
+    def get_context(self) -> List[Dict[str, any]]:
+        """Get current conversation context."""
+        return self.history
+
+    def clear_history(self):
+        """Clear conversation history."""
+        self.history = self._initialize_history()
+
+    def add_memory(self, key: str, value: str):
+        """Add contextual memory to the conversation."""
+        self.history.append({"role": "system", "content": f"[Memory: {key}={value}]"})
+
+
+class TodoChatAgent:
+    """AI agent for task management using OpenAI Agents SDK with OpenRouter."""
+
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.mcp_server = None
+        self.context_manager = ContextManager(user_id)
+
+        # Setup OpenRouter client using specific configuration
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        openrouter_model = os.getenv("OPENROUTER_MODEL", "mistralai/devstral-2512:free")
+
+        if not openrouter_api_key:
+            raise ValueError("OPENROUTER_API_KEY is not set in environment variables")
+
+        external_client = AsyncOpenAI(
+            api_key=openrouter_api_key,
+            base_url=openrouter_base_url,
+        )
+
+        # Define the model to use (using available OpenRouter models)
+        model = OpenAIChatCompletionsModel(
+            model=openrouter_model,
+            openai_client=external_client
+        )
+
+        # Create run configuration with OpenRouter
+        self.config = RunConfig(
+            model=model,
+            model_provider=external_client,
+        )
+
+        # Setup MCP server for extended functionality
+        self.mcp_server = self.setup_mcp_server()
+
+        # Create the agent with tools
+        agent_kwargs = {
+            "name": "Todo Assistant",
+            "instructions": """You are a helpful assistant for managing todo tasks.
+            Use available tools to add, list, complete, update, and delete tasks.
+            When needed, use MCP tools to access and manage user's todo workspace.
+            Always confirm actions with specific details and be friendly and encouraging.
+            If users ask general questions, respond directly without using functions.
+            Always respond in a conversational and friendly tone.""",
+            "tools": self.get_tools()
+        }
+
+        # Add MCP server if available
+        if self.mcp_server:
+            agent_kwargs["mcp_servers"] = [self.mcp_server]
+
+        self.agent = Agent(**agent_kwargs)
+
+    def setup_mcp_server(self):
+        """Setup MCP server for extended functionality."""
+        try:
+            # Create MCP server for advanced operations
+            mcp_server = MCPServerStdio(
+                name="Todo MCP Server",
+                params={
+                    "command": "python",
+                    "args": ["-c", "print('MCP Server for Todo operations')"]
+                }
+            )
+            return mcp_server
+
+    async def async_init(self):
+        """Initialize the agent asynchronously to connect MCP server if needed."""
+        if self.mcp_server and self.mcp_server.session is None:
+            try:
+                await self.mcp_server.connect()
+            except Exception as e:
+                print(f"Failed to connect MCP server: {e}")
+                # Continue without MCP server if connection fails
+
+    def get_tools(self):
+        """Define and return agent tools."""
+        return [
+            self.add_task_tool,
+            self.list_tasks_tool,
+            self.complete_task_tool,
+            self.update_task_tool,
+            self.delete_task_tool,
+            self.add_tag_to_task_tool
+        ]
+
+    @function_tool
+    def add_task_tool(
+        self,
+        params: AddTaskParams
+    ) -> Task:
+        """Add a new task to the user's list."""
+        # In a real implementation, this would call your task service
+        # For demo purposes, we're simulating the creation of a task
+        import random
+        task_id = random.randint(1000, 9999)
+
+        task = Task(
+            id=task_id,
+            title=params.title,
+            description=params.description,
+            completed=False,
+            priority=params.priority or "medium"
+        )
+
+        print(f"Added task: {task.title} for user: {params.user_id}")
+        return task
+
+    @function_tool
+    def list_tasks_tool(
+        self,
+        params: ListTasksParams
+    ) -> Dict[str, object]:
+        """List user's tasks with optional filtering."""
+        # In a real implementation, this would fetch from your database
+        # For demo purposes, we're returning sample tasks
+        sample_tasks = [
+            Task(id=1, title="Buy groceries", completed=False, priority="medium"),
+            Task(id=2, title="Call doctor", completed=True, priority="high"),
+            Task(id=3, title="Prepare presentation", completed=False, priority="high")
+        ]
+
+        # Apply basic filtering based on params
+        filtered_tasks = sample_tasks
+        if params.status == "completed":
+            filtered_tasks = [task for task in sample_tasks if task.completed]
+        elif params.status == "pending":
+            filtered_tasks = [task for task in sample_tasks if not task.completed]
+
+        print(f"Listing tasks for user: {params.user_id} with status filter: {params.status}")
+        return {
+            "tasks": filtered_tasks,
+            "count": len(filtered_tasks),
+            "filters_applied": {"status": params.status, "priority": params.priority}
+        }
+
+    @function_tool
+    def complete_task_tool(
+        self,
+        params: CompleteTaskParams
+    ) -> Task:
+        """Mark a task as completed."""
+        # In a real implementation, this would update your database
+        # For demo purposes, we're simulating the completion
+        task = Task(
+            id=params.task_id,
+            title=f"Completed task {params.task_id}",
+            completed=True,
+            priority="medium"
+        )
+
+        print(f"Marked task {params.task_id} as completed for user: {params.user_id}")
+        return task
+
+    @function_tool
+    def update_task_tool(
+        self,
+        params: UpdateTaskParams
+    ) -> Task:
+        """Update an existing task."""
+        # In a real implementation, this would update your database
+        # For demo purposes, we're simulating the update
+        task = Task(
+            id=params.task_id,
+            title=params.title or f"Updated task {params.task_id}",
+            description=params.description,
+            completed=False,
+            priority=params.priority or "medium"
+        )
+
+        print(f"Updated task {params.task_id} for user: {params.user_id}")
+        return task
+
+    @function_tool
+    def delete_task_tool(
+        self,
+        params: DeleteTaskParams
+    ) -> Dict[str, object]:
+        """Delete a task by ID."""
+        # In a real implementation, this would delete from your database
+        # For demo purposes, we're simulating the deletion
+
+        print(f"Deleted task {params.task_id} for user: {params.user_id}")
+        return {
+            "success": True,
+            "deleted_task_id": params.task_id,
+            "message": f"Successfully deleted task {params.task_id}"
+        }
+
+    @function_tool
+    def add_tag_to_task_tool(
+        self,
+        params: AddTagToTaskParams
+    ) -> Dict[str, object]:
+        """Add a tag to a task."""
+        # In a real implementation, this would update your database
+        # For demo purposes, we're simulating the tagging
+
+        print(f"Added tag '{params.tag_name}' to task {params.task_id} for user: {params.user_id}")
+        return {
+            "success": True,
+            "task_id": params.task_id,
+            "tag_name": params.tag_name,
+            "message": f"Successfully added tag '{params.tag_name}' to task {params.task_id}"
+        }
+
+    async def process_message(
