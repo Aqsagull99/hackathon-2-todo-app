@@ -38,6 +38,7 @@ export interface Task {
   due_date_tz: string | null;
   recurrence_pattern: RecurrencePattern | null;
   recurrence_parent_id: number | null;
+  reminder?: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -131,4 +132,21 @@ export interface Session {
     userId: string;
     expiresAt: Date;
   };
+}
+
+export interface ChatRequest {
+  conversation_id?: string;
+  message: string;
+}
+
+export interface ToolCall {
+  tool: string;
+  parameters: Record<string, any>;
+  result: Record<string, any>;
+}
+
+export interface ChatResponse {
+  conversation_id: string;
+  response: string;
+  tool_calls: ToolCall[];
 }

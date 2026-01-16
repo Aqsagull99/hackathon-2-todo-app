@@ -1,0 +1,256 @@
+openapi: 3.0.0
+info:
+  title: Todo Chat API
+  version: 1.0.0
+  description: Phase III AI Chatbot endpoints for natural language task management
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://todo-backend-production.up.railway.app
+    description: Production (Railway)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Better Auth
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+          description: Existing conversation ID (omit for new conversation)
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: User message
+
+    ChatResponse:
+      type: object
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        response:
+          type: string
+          description: Assistant response
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+
+    ToolCall:
+      type: object
+      properties:
+        tool:
+          type: string
+          enum: [add_task, list_tasks, complete_task, delete_task, update_task, add_tag_to_task]
+        parameters:
+          type: object
+        result:
+          type: object
+
+    Conversation:
+      type: object
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_message:
+          type: string
+          description: Preview of last message
+
+    Message:
+      type: object
+      properties:
+        message_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        status_code:
+          type: integer
+
+paths:
+  /api/chat:
+    post:
+      summary: Send message to chatbot
+      description: Process user message and return AI response with optional tool executions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              new_conversation:
+                summary: Start new conversation
+                value:
+                  message: "Add a task to buy groceries"
+              existing_conversation:
+                summary: Continue conversation
+                value:
+                  conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                  message: "Mark it as high priority"
+      responses:
+        '200':
+          description: Successful chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                task_created:
+                  value:
+                    conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                    response: "I've added 'Buy groceries' to your task list with high priority."
+                    tool_calls:
+                      - tool: "add_task"
+                        parameters:
+                          user_id: "user123"
+                          title: "Buy groceries"
+                          priority: "high"
+                        result:
+                          task_id: 42
+                          status: "created"
+                          title: "Buy groceries"
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/conversations:
+    get:
+      summary: List user's conversations
+      description: Retrieve all conversations for authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+              example:
+                conversations:
+                  - conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                    created_at: "2026-01-10T10:30:00Z"
+                    updated_at: "2026-01-10T11:45:00Z"
+                    last_message: "I've added 'Buy groceries' to your task list."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/conversations/{conversation_id}/messages:
+    get:
+      summary: Get conversation history
+      description: Retrieve all messages for a specific conversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+      responses:
+        '200':
+          description: Conversation messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+              example:
+                messages:
+                  - message_id: "660e8400-e29b-41d4-a716-446655440001"
+                    role: "user"
+                    content: "Add a task to buy groceries"
+                    tool_calls: null
+                    created_at: "2026-01-10T10:30:00Z"
+                  - message_id: "660e8400-e29b-41d4-a716-446655440002"
+                    role: "assistant"
+                    content: "I've added 'Buy groceries' to your task list."
+                    tool_calls:
+                      - tool: "add_task"
+                        parameters:
+                          user_id: "user123"
+                          title: "Buy groceries"
+                        result:
+                          task_id: 42
+                          status: "created"
+                    created_at: "2026-01-10T10:30:02Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

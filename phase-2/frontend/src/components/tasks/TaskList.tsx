@@ -53,6 +53,17 @@ export function TaskList({ userId, accessToken, initialFilter = "all", initialSh
     fetchTasks();
   }, [fetchTasks]);
 
+  // Listen for task-created events from the chat and refresh tasks
+  useEffect(() => {
+    const handler = (e: Event) => {
+      // Refresh task list when a new task is created via chat
+      fetchTasks();
+    };
+
+    window.addEventListener('task-created', handler as EventListener);
+    return () => window.removeEventListener('task-created', handler as EventListener);
+  }, [fetchTasks]);
+
   // Create task
   const handleCreate = async (data: TaskExtendedCreate) => {
     const newTask = await api.createTask(userId, data);

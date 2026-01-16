@@ -1,6 +1,6 @@
 """Pydantic schemas module."""
 
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
+from app.schemas.task import TaskCreate, TaskUpdate, TaskRead
 from app.schemas.extended import (
     TaskPriority,
     RecurrencePattern,
@@ -25,8 +25,7 @@ __all__ = [
     # Task schemas
     "TaskCreate",
     "TaskUpdate",
-    "TaskResponse",
-    "TaskListResponse",
+    "TaskRead",
     # Extended schemas
     "TaskPriority",
     "RecurrencePattern",

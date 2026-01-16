@@ -29,7 +29,21 @@ async def create_task(
         user_id=user_id,
         title=task_data.title,
         description=task_data.description,
+        priority=task_data.priority,
+        due_date=task_data.due_date,
+        due_date_tz=task_data.due_date_tz,
+        reminder=task_data.reminder,
+        reminder_time=task_data.reminder_time,
+        recurrence_pattern=task_data.recurrence_pattern,
     )
+
+    # Handle tags if provided
+    if task_data.tags:
+        from app.services.tag_service import get_or_create_tag
+        for tag_name in task_data.tags:
+            tag = await get_or_create_tag(db, user_id, tag_name)
+            task.tags.append(tag)
+
     db.add(task)
     await db.commit()
     await db.refresh(task)

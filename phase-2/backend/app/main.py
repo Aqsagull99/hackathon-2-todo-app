@@ -9,13 +9,14 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.api.routes import health
 from app.api.routes import tasks, tasks_extended, tags, reminders
+from app.api.routes import chat, chatkit
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler for startup and shutdown."""
     # Startup: Initialize database
-    await init_db()
+    # await init_db()  # Commented out after initial setup
     yield
     # Shutdown: Close database connections
     await close_db()
@@ -48,12 +49,14 @@ app.add_middleware(
 
 
 
-# Include routers
+# Include routers - Order matters! More specific routes first
 app.include_router(health.router)
-app.include_router(tasks.router)
-app.include_router(tasks_extended.router)
+app.include_router(tasks_extended.router)  # /api/tasks (more specific)
+app.include_router(tasks.router)           # /api/{user_id}/tasks (more generic)
 app.include_router(tags.router)
 app.include_router(reminders.router)
+app.include_router(chat.router)
+app.include_router(chatkit.router)
 
 
 @app.get("/")

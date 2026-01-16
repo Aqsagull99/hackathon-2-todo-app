@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # CORS
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # OpenRouter / OpenAI
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str | None = None
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
