@@ -102,13 +102,26 @@ const ChatIcon: React.FC<ChatIconProps> = ({
       }
 
       onTaskCreated?.();
-    } catch {
+    } catch (error) {
+      console.error("Chat error:", error);
+
+      let errorMessage = 'Something went wrong. Please try again.';
+
+      // Check if it's a 401 error (User not found or unauthorized)
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.';
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'User session expired. Please refresh the page.';
+        }
+      }
+
       setMessages(prev => [
         ...prev,
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: 'Something went wrong. Please try again.',
+          content: errorMessage,
           timestamp: new Date(),
         },
       ]);
