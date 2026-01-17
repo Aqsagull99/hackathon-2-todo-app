@@ -4,6 +4,9 @@ import { auth } from "@/lib/auth";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 import { SignJWT } from "jose";
 
+// Force this page to be dynamic to prevent static generation
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Dashboard - Todo App",
   description: "Manage your tasks",
@@ -11,11 +14,15 @@ export const metadata = {
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const resolvedSearchParams = await searchParams;
+
+  // Ensure we're getting the headers properly for session validation
+  const requestHeaders = await headers();
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   });
 
   if (!session) {
+    console.log("No session found, redirecting to login"); // Debug log
     redirect("/login");
   }
 
