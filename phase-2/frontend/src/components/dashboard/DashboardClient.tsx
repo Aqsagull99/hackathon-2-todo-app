@@ -265,10 +265,10 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
 
   return (
     <NotificationProvider userId={userId}>
-      <div className="min-h-screen bg-[#0a0a0f] flex">
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col md:flex-row">
       {/* Sidebar */}
-      <div className="w-64 bg-[rgba(255,110,199,0.12)] border-r border-[rgba(255,110,199,0.35)] backdrop-blur-24 flex flex-col">
-        <div className="p-6 border-b border-[rgba(255,110,199,0.35)]">
+      <div className="w-full md:w-64 bg-[rgba(255,110,199,0.12)] border-r border-[rgba(255,110,199,0.35)] backdrop-blur-24 flex flex-col md:min-h-screen">
+        <div className="p-4 md:p-6 border-b border-[rgba(255,110,199,0.35)]">
           <h2 className="text-xl font-bold text-white">
             Todo<span className="text-[#db2777]">Pink</span>
           </h2>
@@ -292,7 +292,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                 aria-pressed={isActive}
               >
                 <Icon className={cn("mr-3 h-5 w-5", isActive ? "text-[#db2777]" : "text-[rgba(255,255,255,0.7)]")} />
-                {label}
+                <span className="truncate">{label}</span>
               </button>
             );
           })}
@@ -307,10 +307,10 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Welcome Section */}
-        <div className="p-8 border-b border-[rgba(255,110,199,0.35)] bg-[rgba(255,110,199,0.06)] backdrop-blur-sm">
-          <h1 className="text-2xl font-semibold text-white">
+        <div className="p-4 sm:p-6 md:p-8 border-b border-[rgba(255,110,199,0.35)] bg-[rgba(255,110,199,0.06)] backdrop-blur-sm">
+          <h1 className="text-xl sm:text-2xl font-semibold text-white">
             Welcome {userName || "User"}!
           </h1>
           <p className="text-sm text-white mt-1">
@@ -319,47 +319,47 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-8">
-          <div className="max-w-6xl mx-auto space-y-8">
+        <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
+          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="glass rounded-2xl p-4 sm:p-6 text-center"
               >
-                <div className="w-12 h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-3">
-                  <List className="w-6 h-6 text-[#db2777]" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                  <List className="w-5 h-5 sm:w-6 sm:h-6 text-[#db2777]" />
                 </div>
-                <p className="text-3xl font-bold text-[#db2777]">{tasks.length}</p>
-                <p className="text-sm text-[rgba(255,255,255,0.5)] mt-1">Total Tasks</p>
+                <p className="text-xl sm:text-3xl font-bold text-[#db2777]">{tasks.length}</p>
+                <p className="text-xs sm:text-sm text-[rgba(255,255,255,0.5)] mt-1">Total Tasks</p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="glass rounded-2xl p-4 sm:p-6 text-center"
               >
-                <div className="w-12 h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-3">
-                  <ListTodo className="w-6 h-6 text-[#db2777]" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                  <ListTodo className="w-5 h-5 sm:w-6 sm:h-6 text-[#db2777]" />
                 </div>
-                <p className="text-3xl font-bold text-[#db2777]">{pendingCount}</p>
-                <p className="text-sm text-[rgba(255,255,255,0.5)] mt-1">Active Tasks</p>
+                <p className="text-xl sm:text-3xl font-bold text-[#db2777]">{pendingCount}</p>
+                <p className="text-xs sm:text-sm text-[rgba(255,255,255,0.5)] mt-1">Active Tasks</p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.3 }}
-                className="glass rounded-2xl p-6 text-center"
+                className="glass rounded-2xl p-4 sm:p-6 text-center"
               >
-                <div className="w-12 h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-6 h-6 text-[#db2777]" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[rgba(255,110,199,0.1)] rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-[#db2777]" />
                 </div>
-                <p className="text-3xl font-bold text-[#db2777]">{completedCount}</p>
-                <p className="text-sm text-[rgba(255,255,255,0.5)] mt-1">Completed</p>
+                <p className="text-xl sm:text-3xl font-bold text-[#db2777]">{completedCount}</p>
+                <p className="text-xs sm:text-sm text-[rgba(255,255,255,0.5)] mt-1">Completed</p>
               </motion.div>
             </div>
 
@@ -368,16 +368,16 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 }}
-              className="glass rounded-2xl p-6"
+              className="glass rounded-2xl p-4 sm:p-6"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-white">
                   {editingTask ? "Edit Task" : showAddTask ? "Add New Task" : "Quick Add Task"}
                 </h2>
                 {!showAddTask && (
                   <button
                     onClick={() => setShowAddTask(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[rgba(255,110,199,0.9)] to-[rgba(219,39,119,0.9)] text-white rounded-lg hover:from-[rgba(255,110,199,1)] hover:to-[rgba(219,39,119,1)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[rgba(255,110,199,0.4)] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[rgba(255,110,199,0.9)] to-[rgba(219,39,119,0.9)] text-white rounded-lg hover:from-[rgba(255,110,199,1)] hover:to-[rgba(219,39,119,1)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[rgba(255,110,199,0.4)] focus:ring-offset-2 focus:ring-offset-[#0a0a0f] w-full sm:w-auto justify-center"
                   >
                     <Plus className="w-4 h-4" />
                     Add Task
@@ -386,7 +386,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
               </div>
 
               {showAddTask && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {error && (
                     <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
                       {error}
@@ -420,7 +420,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-[rgba(255,110,199,0.9)] mb-2">
                           Priority
@@ -449,7 +449,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-[rgba(255,110,199,0.9)] mb-2">
                           Tags
@@ -463,7 +463,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                         />
                       </div>
 
-                      <div className="flex items-end gap-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
@@ -492,7 +492,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                       </div>
                     </div>
 
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                       <button
                         onClick={editingTask ? handleUpdateTask : handleCreateTask}
                         disabled={isLoading}
@@ -546,17 +546,17 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.5 }}
-            className="glass rounded-2xl p-6"
+            className="glass rounded-2xl p-4 sm:p-6 mt-6"
           >
             <div className="flex flex-col">
               {/* Filter tabs */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
                 {filterOptions.map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
                     onClick={() => setCurrentFilter(value)}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[rgba(255,110,199,0.4)] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]",
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[rgba(255,110,199,0.4)] focus:ring-offset-2 focus:ring-offset-[#0a0a0f]",
                       currentFilter === value
                         ? "bg-[rgba(255,110,199,0.25)] text-white shadow-lg shadow-[rgba(255,110,199,0.15)]"
                         : "text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,110,199,0.18)] hover:text-white"
@@ -565,13 +565,13 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                     aria-pressed={currentFilter === value}
                   >
                     <Icon className={cn("w-4 h-4", currentFilter === value ? "text-[#db2777]" : "text-[rgba(255,255,255,0.7)]")} />
-                    {label}
+                    <span className="truncate">{label}</span>
                   </button>
                 ))}
               </div>
 
               {/* Task List */}
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+              <div className="space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-2">
                 {isLoading ? (
                   <div className="py-16 text-center text-[rgba(255,255,255,0.5)]" role="status" aria-live="polite">
                     <svg
@@ -635,7 +635,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                               : "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,110,199,0.25)] hover:bg-[rgba(255,255,255,0.12)]"
                           }`}
                         >
-                          <div className="flex items-start gap-4">
+                          <div className="flex flex-col sm:flex-row items-start gap-4">
                             {/* Checkbox */}
                             <button
                               onClick={async () => {
@@ -661,7 +661,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                                 }
                               }}
                               disabled={isLoading}
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 ${
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                                 task.completed
                                   ? "bg-[#db2777] border-[#db2777] text-white"
                                   : "border-[rgba(255,255,255,0.4)] hover:border-[#db2777]"
@@ -715,7 +715,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                                   </span>
                                 )}
                                 {task.tags && task.tags.length > 0 && (
-                                  <div className="flex gap-1">
+                                  <div className="flex flex-wrap gap-1">
                                     {task.tags.map(tag => (
                                       <span
                                         key={tag.id}
@@ -731,7 +731,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 mt-2 sm:mt-0">
                               <button
                                 onClick={() => handleEditTask(task)}
                                 disabled={isLoading}

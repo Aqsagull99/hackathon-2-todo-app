@@ -49,6 +49,12 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Handle 401 Unauthorized errors specifically
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Authentication error (401): Please check your login status. ${errorText}`);
+      }
+
       const error = await response.json().catch(() => ({ detail: "An error occurred" }));
       throw new Error(error.detail || `HTTP error! status: ${response.status}`);
     }
