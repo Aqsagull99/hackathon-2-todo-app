@@ -2,14 +2,13 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Pink and White theme
+        // Pink and White theme - using CSS variables that match globals.css
         primary: {
           50: '#fdf2f8',
           100: '#fce7f3',
@@ -22,8 +21,8 @@ const config: Config = {
           800: '#9d174d',
           900: '#831843',
         },
-        background: '#ffffff',
-        foreground: '#000000',
+        background: '#0a0a0f', // Black background matching globals.css
+        foreground: '#ffffff', // White text
       },
     },
   },

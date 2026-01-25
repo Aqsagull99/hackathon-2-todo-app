@@ -92,7 +92,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
 
     try {
       // Handle tags: Create tags if they don't exist, then get their IDs
-      let tagIds: number[] = [];
+      const tagIds: number[] = [];
       if (newTask.tags.trim()) {
         const tagNames = newTask.tags.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -219,7 +219,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
 
     try {
       // Handle tags similar to create
-      let tagIds: number[] = [];
+      const tagIds: number[] = [];
       if (newTask.tags.trim()) {
         const tagNames = newTask.tags.split(',').map(t => t.trim()).filter(Boolean);
         const existingTagsResponse = await api.getTags(userId);
@@ -311,7 +311,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
         {/* Welcome Section */}
         <div className="p-4 sm:p-6 md:p-8 border-b border-[rgba(255,110,199,0.35)] bg-[rgba(255,110,199,0.06)] backdrop-blur-sm">
           <h1 className="text-xl sm:text-2xl font-semibold text-white">
-            Welcome {userName || "User"}!
+            Welcome to TodoPink!
           </h1>
           <p className="text-sm text-white mt-1">
             Manage your tasks and stay productive.

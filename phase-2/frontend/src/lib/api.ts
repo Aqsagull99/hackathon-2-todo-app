@@ -118,8 +118,8 @@ class ApiClient {
     return this.request<TaskListResponseExtended>(endpoint);
   }
 
-  async getTask(userId: string, taskId: number): Promise<Task> {
-    return this.request<Task>(`/api/${userId}/tasks/${taskId}`);
+  async getTask(_userId: string, taskId: number): Promise<Task> {
+    return this.request<Task>(`/api/tasks/${taskId}`);
   }
 
   async createTask(
@@ -133,45 +133,45 @@ class ApiClient {
   }
 
   async updateTask(
-    userId: string,
+    _userId: string,
     taskId: number,
     task: TaskExtendedUpdate
   ): Promise<Task> {
-    return this.request<Task>(`/api/${userId}/tasks/${taskId}`, {
+    return this.request<Task>(`/api/tasks/${taskId}`, {
       method: "PUT",
       body: JSON.stringify(task),
     });
   }
 
-  async deleteTask(userId: string, taskId: number): Promise<void> {
-    return this.request<void>(`/api/${userId}/tasks/${taskId}`, {
+  async deleteTask(_userId: string, taskId: number): Promise<void> {
+    return this.request<void>(`/api/tasks/${taskId}`, {
       method: "DELETE",
     });
   }
 
   async toggleTask(
-    userId: string,
+    _userId: string,
     taskId: number
   ): Promise<RecurringCompleteResponse> {
     return this.request<RecurringCompleteResponse>(
-      `/api/${userId}/tasks/${taskId}/complete`,
+      `/api/tasks/${taskId}/complete`,
       {
         method: "PATCH",
       }
     );
   }
 
-  async skipTask(userId: string, taskId: number): Promise<RecurringCompleteResponse> {
+  async skipTask(_userId: string, taskId: number): Promise<RecurringCompleteResponse> {
     return this.request<RecurringCompleteResponse>(
-      `/api/${userId}/tasks/${taskId}/skip`,
+      `/api/tasks/${taskId}/skip`,
       {
         method: "POST",
       }
     );
   }
 
-  async cancelRecurrence(userId: string, taskId: number): Promise<Task> {
-    return this.request<Task>(`/api/${userId}/tasks/${taskId}/recurrence`, {
+  async cancelRecurrence(_userId: string, taskId: number): Promise<Task> {
+    return this.request<Task>(`/api/tasks/${taskId}/recurrence`, {
       method: "DELETE",
     });
   }
@@ -205,9 +205,9 @@ class ApiClient {
     });
   }
 
-  async deleteTag(userId: string, tagId: number): Promise<{ message: string; affected_task_ids: number[] }> {
+  async deleteTag(_userId: string, tagId: number): Promise<{ message: string; affected_task_ids: number[] }> {
     return this.request<{ message: string; affected_task_ids: number[] }>(
-      `/api/${userId}/tags/${tagId}`,
+      `/api/tags/${tagId}`,
       {
         method: "DELETE",
       }
@@ -218,34 +218,34 @@ class ApiClient {
   // Reminder Endpoints
   // ============================================================================
 
-  async getReminder(userId: string, taskId: number): Promise<Reminder> {
-    return this.request<Reminder>(`/api/${userId}/tasks/${taskId}/reminder`);
+  async getReminder(_userId: string, taskId: number): Promise<Reminder> {
+    return this.request<Reminder>(`/api/tasks/${taskId}/reminder`);
   }
 
   async createReminder(
-    userId: string,
+    _userId: string,
     taskId: number,
     dueTime: string
   ): Promise<Reminder> {
-    return this.request<Reminder>(`/api/${userId}/tasks/${taskId}/reminder`, {
+    return this.request<Reminder>(`/api/tasks/${taskId}/reminder`, {
       method: "POST",
       body: JSON.stringify({ due_time: dueTime }),
     });
   }
 
   async snoozeReminder(
-    userId: string,
+    _userId: string,
     reminderId: number,
     minutes: number
   ): Promise<Reminder> {
-    return this.request<Reminder>(`/api/${userId}/reminders/${reminderId}/snooze`, {
+    return this.request<Reminder>(`/api/reminders/${reminderId}/snooze`, {
       method: "POST",
       body: JSON.stringify({ minutes }),
     });
   }
 
-  async dismissReminder(userId: string, reminderId: number): Promise<void> {
-    return this.request<void>(`/api/${userId}/reminders/${reminderId}`, {
+  async dismissReminder(_userId: string, reminderId: number): Promise<void> {
+    return this.request<void>(`/api/reminders/${reminderId}`, {
       method: "DELETE",
     });
   }

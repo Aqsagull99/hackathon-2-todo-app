@@ -1,6 +1,6 @@
 // Example TaskForm component that uses the proper API client
 import React, { useState } from 'react';
-import { apiClient, createTask } from '../utils/apiClient';
+import { api } from '@/lib/api';
 
 const TaskForm = ({ userId, onTaskCreated }) => {
   const [title, setTitle] = useState('');
@@ -30,7 +30,7 @@ const TaskForm = ({ userId, onTaskCreated }) => {
       };
 
       // Use the createTask function which handles JWT tokens properly
-      const newTask = await createTask(userId, taskData);
+      const newTask = await api.post(`/tasks`, taskData);
 
       // Reset form
       setTitle('');

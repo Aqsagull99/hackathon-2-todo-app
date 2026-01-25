@@ -136,7 +136,7 @@ const ChatIcon: React.FC<ChatIconProps> = ({
       {!isOpen && (
         <button
           onClick={toggleChat}
-          className={`fixed ${positionClasses} z-50 bg-gradient-to-r from-pink-500 to-purple-600 p-4 rounded-full text-white shadow-xl hover:scale-110 transition`}
+          className={`fixed ${positionClasses} z-[100] bg-gradient-to-r from-pink-500 to-purple-600 p-[14px] w-14 h-14 rounded-full text-white shadow-xl hover:scale-110 transition-all duration-200 md:p-4 md:w-auto md:h-auto`}
         >
           <MessageCircle size={26} />
         </button>
@@ -144,48 +144,48 @@ const ChatIcon: React.FC<ChatIconProps> = ({
 
       {/* Chat Panel */}
       {isOpen && !isMinimized && (
-        <div className="fixed bottom-24 right-6 w-[420px] h-[620px] z-50 bg-black/95 backdrop-blur-xl border border-pink-500/30 rounded-3xl shadow-2xl flex flex-col">
+        <div className="fixed z-[100] bg-black/95 backdrop-blur-xl border border-pink-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden left-4 right-4 bottom-4 h-[calc(100vh-3.5rem)] max-h-[75vh] sm:max-h-[85vh] md:left-auto md:right-6 md:bottom-24 md:w-[420px] md:h-[620px] md:max-h-none">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-pink-500/20">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-pink-500/20 md:px-6 md:py-4 gap-1.5 md:gap-2">
             <div className="flex items-center gap-2">
               <Bot className="text-pink-400" />
-              <span className="text-white font-semibold text-lg">
+              <span className="text-white font-semibold text-base md:text-lg">
                 Task Assistant
               </span>
               <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse" />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2">
               <button onClick={() => setIsMinimized(true)}>
-                <Minus className="text-gray-400 hover:text-white" />
+                <Minus className="text-gray-400/70 hover:text-white p-2.5 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors md:p-3 md:w-11 md:h-11" />
               </button>
               <button onClick={() => setIsOpen(false)}>
-                <X className="text-gray-400 hover:text-white" />
+                <X className="text-gray-400/70 hover:text-white p-2.5 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors md:p-3 md:w-11 md:h-11" />
               </button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 md:px-5 md:py-4 md:space-y-4 [&amp;&amp;.scrollbar-thin]:scrollbar-thin [&amp;&amp;.scrollbar-thumb-pink-500/50]:scrollbar-thumb-pink-500/50 [&amp;&amp;.scrollbar-track-transparent]:scrollbar-track-transparent min-h-0">
             {messages.map(msg => (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] px-4 py-3 rounded-2xl leading-relaxed text-base ${
+                  className={`max-w-[90%] md:max-w-[85%] px-3 py-2.5 md:px-4 md:py-3 rounded-2xl leading-relaxed text-sm md:text-base shadow-lg ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
                       : 'bg-gray-800/60 border border-pink-500/20 text-white'
                   }`}
                 >
-                  <div className="flex gap-2 items-start">
+                  <div className="flex gap-1 md:gap-2 items-start">
                     {msg.role === 'assistant' && (
-                      <Bot size={18} className="text-pink-400 mt-1" />
+                      <Bot size={14} className="text-pink-400 flex-shrink-0 mt-0.5 md:mt-1 md:size-18" />
                     )}
                     <span>{msg.content}</span>
                     {msg.role === 'user' && (
-                      <User size={18} className="mt-1 text-white" />
+                      <User size={14} className="flex-shrink-0 mt-0.5 md:mt-1 md:size-18 text-white opacity-80" />
                     )}
                   </div>
                 </div>
@@ -195,23 +195,23 @@ const ChatIcon: React.FC<ChatIconProps> = ({
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-pink-500/20">
-            <div className="flex items-center gap-3">
+          <div className="p-3 border-t border-pink-500/20 md:p-4">
+            <div className="flex items-end gap-2 md:gap-3">
               <input
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Type your task request..."
-                className="flex-1 px-5 py-3 rounded-full bg-gray-800/60 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 px-3 py-[11px] rounded-2xl bg-gray-800/60 border border-gray-700/50 text-white text-sm md:text-base placeholder-gray-400/80 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 min-h-[44px] md:px-5 md:py-3 md:rounded-full md:min-h-0 resize-none"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading}
-                className="bg-pink-500 hover:bg-pink-600 p-3 rounded-full text-white"
+                className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 p-2.5 w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-lg hover:shadow-pink-500/25 transition-all duration-200 md:p-3 md:w-12 md:h-12 md:rounded-full disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
               >
                 {isLoading ? <Loader className="animate-spin" /> : <Send />}
               </button>
-              <button className="bg-gray-700 p-3 rounded-full">
+              <button className="bg-gray-800/50 hover:bg-gray-700/60 p-2.5 w-11 h-11 rounded-2xl flex items-center justify-center border border-gray-600/50 hover:border-gray-500/50 transition-all duration-200 md:p-3 md:w-12 md:h-12 md:rounded-full">
                 <Mic />
               </button>
             </div>
