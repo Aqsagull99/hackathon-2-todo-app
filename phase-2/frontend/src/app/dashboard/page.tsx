@@ -34,12 +34,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const accessToken = await new SignJWT({
     sub: session.user.id,
+    user_id: session.user.id,
     email: session.user.email,
-    userId: session.user.id,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("2h")
+    .setExpirationTime("24h")
     .sign(secret);
 
   return (

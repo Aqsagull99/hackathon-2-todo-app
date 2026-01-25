@@ -28,6 +28,7 @@ def verify_jwt(token: str) -> Optional[dict]:
             token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
+            options={"leeway": 3600},  # 1 hour tolerance for clock skew
         )
         return payload
     except JWTError:
@@ -62,15 +63,6 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Check token expiration
-    exp = payload.get("exp")
-    if exp and datetime.utcnow().timestamp() > exp:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

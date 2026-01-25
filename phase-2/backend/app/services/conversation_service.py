@@ -2,16 +2,17 @@
 
 from datetime import datetime
 from typing import List, Optional
-from uuid import UUID
+pass
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from uuid import UUID
 
 from app.models.conversation import Conversation
 from app.models.message import Message
 
 
-async def create_conversation(user_id: UUID) -> UUID:
+async def create_conversation(user_id: str) -> str:
     """Create a new conversation for a user, creating the user if they don't exist."""
     from app.core.database import async_session_maker
     from app.models.user import User
@@ -38,11 +39,11 @@ async def create_conversation(user_id: UUID) -> UUID:
         session.add(conversation)
         await session.commit()
         await session.refresh(conversation)
-        return conversation.conversation_id
+        return str(conversation.conversation_id)
 
 
 async def get_conversation_history(
-    conversation_id: UUID,
+    conversation_id: str,
     limit: int = 10
 ) -> List[dict]:
     """Get conversation history with last N messages."""
@@ -51,7 +52,7 @@ async def get_conversation_history(
     async with async_session_maker() as session:
         statement = (
             select(Message)
-            .where(Message.conversation_id == conversation_id)
+            .where(Message.conversation_id == UUID(conversation_id))
             .order_by(Message.created_at.desc())
             .limit(limit)
         )
@@ -71,7 +72,7 @@ async def get_conversation_history(
 
 
 async def add_message(
-    conversation_id: UUID,
+    conversation_id: str,
     role: str,
     content: str,
     tool_calls: Optional[dict] = None
@@ -93,7 +94,7 @@ async def add_message(
 
     async with async_session_maker() as session:
         message = Message(
-            conversation_id=conversation_id,
+            conversation_id=UUID(conversation_id),
             role=role,
             content=clean_content,
             tool_calls=tool_calls
@@ -101,14 +102,14 @@ async def add_message(
         session.add(message)
 
         # Update conversation.updated_at
-        conversation = await session.get(Conversation, conversation_id)
+        conversation = await session.get(Conversation, UUID(conversation_id))
         if conversation:
             conversation.updated_at = datetime.utcnow()
 
         await session.commit()
 
 
-async def list_user_conversations(user_id: UUID) -> List[Conversation]:
+async def list_user_conversations(user_id: str) -> List[Conversation]:
     """List all conversations for a user."""
     from app.core.database import async_session_maker
 
