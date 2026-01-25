@@ -1,0 +1,66 @@
+# Development environment specific values
+replicaCount: 1
+
+image:
+  repository: my-registry.com/my-app-dev
+  pullPolicy: Always
+  tag: "dev-latest"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: dev.my-app.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+env:
+  - name: ENV
+    value: "development"
+  - name: LOG_LEVEL
+    value: "debug"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Development-specific configurations
+livenessProbe:
+  enabled: true
+  path: "/health"
+readinessProbe:
+  enabled: true
+  path: "/ready"
+
+# Development-specific resources
+autoscaling:
+  enabled: false
+
+# Development logging
+logging:
+  enabled: true
+  sidecar:
+    enabled: true
+    image: "fluent/fluent-bit:1.8"
+    config: |
+      [INPUT]
+          Name tail
+          Path /var/log/app/*.log
+      [OUTPUT]
+          Name forward
+          Match *
