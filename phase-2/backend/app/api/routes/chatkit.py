@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 import json
 
-from app.api.deps import get_current_user_id
+from app.api.deps import VerifiedUserIdFromToken
 from app.services.chatkit_service import ChatKitService
 
 router = APIRouter(prefix="/api", tags=["chatkit"])
@@ -16,7 +16,7 @@ chatkit_service = ChatKitService()
 
 @router.post("/chatkit/session")
 async def create_chatkit_session(
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ) -> Dict[str, Any]:
     """Create a new ChatKit session for the authenticated user."""
     try:
@@ -29,7 +29,7 @@ async def create_chatkit_session(
 @router.post("/chatkit/refresh")
 async def refresh_chatkit_session(
     request: Request,
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ) -> Dict[str, Any]:
     """Refresh an existing ChatKit session."""
     try:
@@ -48,7 +48,7 @@ async def refresh_chatkit_session(
 @router.post("/chatkit")
 async def handle_chatkit_request(
     request: Request,
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ):
     """Handle all ChatKit requests."""
     try:
@@ -67,7 +67,7 @@ async def handle_chatkit_request(
 @router.post("/chatkit/stream")
 async def handle_chatkit_streaming(
     request: Request,
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ):
     """Handle ChatKit streaming requests."""
     try:
@@ -94,7 +94,7 @@ async def handle_chatkit_streaming(
 
 @router.get("/chatkit/threads")
 async def list_user_threads(
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ):
     """List user's ChatKit threads (conversations)."""
     try:
@@ -122,7 +122,7 @@ async def list_user_threads(
 @router.get("/chatkit/threads/{thread_id}/messages")
 async def get_thread_messages(
     thread_id: str,
-    user_id: str = Depends(get_current_user_id)
+    user_id: VerifiedUserIdFromToken
 ):
     """Get messages for a specific ChatKit thread."""
     try:

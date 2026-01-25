@@ -76,7 +76,12 @@ const ChatIcon: React.FC<ChatIconProps> = ({
     ]);
 
     try {
-      api.setToken(accessToken || null);
+      // Make sure we have a valid token before attempting to send the message
+      if (!accessToken) {
+        throw new Error("No authentication token available. Please refresh the page.");
+      }
+
+      api.setToken(accessToken);
       const response = await api.sendMessage(userId, conversationId, content);
       setConversationId(response.conversation_id);
 
@@ -109,10 +114,12 @@ const ChatIcon: React.FC<ChatIconProps> = ({
 
       // Check if it's a 401 error (User not found or unauthorized)
       if (error instanceof Error) {
-        if (error.message.includes('401')) {
+        if (error.message.includes('401') || error.message.includes('User not found')) {
           errorMessage = 'Authentication error. Please refresh the page and try again.';
-        } else if (error.message.includes('User not found')) {
-          errorMessage = 'User session expired. Please refresh the page.';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Access forbidden. Please check your permissions.';
+        } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Connection error. Please check your internet connection.';
         }
       }
 
@@ -144,7 +151,7 @@ const ChatIcon: React.FC<ChatIconProps> = ({
 
       {/* Chat Panel */}
       {isOpen && !isMinimized && (
-        <div className="fixed bottom-24 right-6 w-[420px] h-[620px] z-50 bg-black/95 backdrop-blur-xl border border-pink-500/30 rounded-3xl shadow-2xl flex flex-col">
+        <div className="fixed bottom-4 right-4 left-4 md:left-auto md:bottom-24 md:right-6 w-full md:w-[95vw] lg:w-[420px] h-[80vh] md:h-[620px] max-w-2xl z-50 bg-black/95 backdrop-blur-xl border border-pink-500/30 rounded-3xl shadow-2xl flex flex-col">
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-pink-500/20">
@@ -166,14 +173,14 @@ const ChatIcon: React.FC<ChatIconProps> = ({
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {messages.map(msg => (
               <div
                 key={msg.id}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] px-4 py-3 rounded-2xl leading-relaxed text-base ${
+                  className={`max-w-[90%] sm:max-w-[85%] px-4 py-3 rounded-2xl leading-relaxed text-base ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
                       : 'bg-gray-800/60 border border-pink-500/20 text-white'
@@ -181,11 +188,11 @@ const ChatIcon: React.FC<ChatIconProps> = ({
                 >
                   <div className="flex gap-2 items-start">
                     {msg.role === 'assistant' && (
-                      <Bot size={18} className="text-pink-400 mt-1" />
+                      <Bot size={18} className="text-pink-400 mt-1 hidden sm:block" />
                     )}
-                    <span>{msg.content}</span>
+                    <span className="break-words">{msg.content}</span>
                     {msg.role === 'user' && (
-                      <User size={18} className="mt-1 text-white" />
+                      <User size={18} className="mt-1 text-white hidden sm:block" />
                     )}
                   </div>
                 </div>
@@ -196,24 +203,26 @@ const ChatIcon: React.FC<ChatIconProps> = ({
 
           {/* Input */}
           <div className="p-4 border-t border-pink-500/20">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <input
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={e => e.key === 'Enter' && !isLoading && handleSendMessage()}
                 placeholder="Type your task request..."
-                className="flex-1 px-5 py-3 rounded-full bg-gray-800/60 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 px-4 py-3 rounded-full bg-gray-800/60 text-white text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 min-h-[48px]"
               />
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading}
-                className="bg-pink-500 hover:bg-pink-600 p-3 rounded-full text-white"
-              >
-                {isLoading ? <Loader className="animate-spin" /> : <Send />}
-              </button>
-              <button className="bg-gray-700 p-3 rounded-full">
-                <Mic />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isLoading}
+                  className="bg-pink-500 hover:bg-pink-600 p-3 rounded-full text-white min-w-[48px] min-h-[48px]"
+                >
+                  {isLoading ? <Loader className="animate-spin" /> : <Send />}
+                </button>
+                <button className="bg-gray-700 p-3 rounded-full min-w-[48px] min-h-[48px]">
+                  <Mic />
+                </button>
+              </div>
             </div>
           </div>
         </div>

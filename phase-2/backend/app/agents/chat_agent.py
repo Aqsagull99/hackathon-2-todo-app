@@ -1131,7 +1131,7 @@ class TodoChatAgent:
                     try:
                         from app.core.database import async_session_maker
                         from app.services.task_service import create_task
-                        from app.schemas.extended import TaskCreateExtended
+                        from app.schemas.task import TaskCreate
                         from app.models.task import TaskPriority, RecurrencePattern
 
                         async with async_session_maker() as db:
@@ -1149,12 +1149,13 @@ class TodoChatAgent:
                                 except ValueError:
                                     recurrence_enum = None
 
-                            task_payload = TaskCreateExtended(
+                            task_payload = TaskCreate(
                                 title=title,
                                 description=None,
                                 priority=priority_enum,
                                 due_date=due_date,
-                                recurrence_pattern=recurrence_enum
+                                recurrence_pattern=recurrence_enum,
+                                    reminder_time=reminder_time.isoformat() if reminder_time else None
                             )
                             task = await create_task(db, user_identifier, task_payload)
 

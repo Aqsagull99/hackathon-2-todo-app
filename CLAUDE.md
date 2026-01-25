@@ -125,3 +125,5 @@ Todo-app/
 All agents and skills are globally available from:
 - **Agents**: `.claude/agents/` (11 agents total)
 - **Skills**: `.claude/skills/` (21 skills total)
+
+

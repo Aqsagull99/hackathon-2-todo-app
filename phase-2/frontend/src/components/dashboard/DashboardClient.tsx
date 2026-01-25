@@ -311,7 +311,7 @@ export function DashboardClient({ userId, accessToken, userName, initialShowAddT
         {/* Welcome Section */}
         <div className="p-4 sm:p-6 md:p-8 border-b border-[rgba(255,110,199,0.35)] bg-[rgba(255,110,199,0.06)] backdrop-blur-sm">
           <h1 className="text-xl sm:text-2xl font-semibold text-white">
-            Welcome {userName || "User"}!
+            Welcome Back!
           </h1>
           <p className="text-sm text-white mt-1">
             Manage your tasks and stay productive.

@@ -24,7 +24,7 @@ class ChatKitService:
         """Create a new ChatKit session for the user."""
         try:
             # Create a conversation for this session
-            conversation_id = await create_conversation(UUID(user_id))
+            conversation_id = await create_conversation(user_id)
 
             # Return session data with client secret
             return {
@@ -80,7 +80,7 @@ class ChatKitService:
                 # In a real implementation, thread_id would map to our conversation_id
                 # For now, we'll use a placeholder
                 conversation_history = await get_conversation_history(
-                    UUID(thread_id.split('_')[1]) if '_' in thread_id else None,
+                    thread_id.split('_')[1] if '_' in thread_id else None,
                     limit=10
                 )
 
@@ -96,14 +96,14 @@ class ChatKitService:
 
             # Store user message
             await add_message(
-                conversation_id=UUID(thread_id.split('_')[1]) if thread_id and '_' in thread_id else None,
+                conversation_id=thread_id.split('_')[1] if thread_id and '_' in thread_id else None,
                 role="user",
                 content=user_message
             )
 
             # Store assistant response
             await add_message(
-                conversation_id=UUID(thread_id.split('_')[1]) if thread_id and '_' in thread_id else None,
+                conversation_id=thread_id.split('_')[1] if thread_id and '_' in thread_id else None,
                 role="assistant",
                 content=result["response"],
                 tool_calls=result.get("tool_calls", [])
@@ -148,7 +148,7 @@ class ChatKitService:
             if thread_id:
                 conversation_id = thread_id.split('_')[1] if '_' in thread_id else None
                 if conversation_id:
-                    conversation_history = await get_conversation_history(UUID(conversation_id), limit=10)
+                    conversation_history = await get_conversation_history(conversation_id, limit=10)
 
             # Process message with AI agent
             agent = self._create_agent(user_id)

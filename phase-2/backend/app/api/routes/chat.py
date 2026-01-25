@@ -2,13 +2,13 @@
 
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
+pass
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.agents.chat_agent import TodoChatAgent
-from app.api.deps import get_current_user_id
+from app.api.deps import VerifiedUserIdFromToken
 from app.services.conversation_service import (
     add_message,
     create_conversation,
@@ -38,21 +38,21 @@ class ChatResponse(BaseModel):
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest,
-    user_id: str = Depends(get_current_user_id)
+    current_user_id: VerifiedUserIdFromToken
 ):
     """Handle chat messages and process with AI agent."""
     from app.core.database import async_session_maker
 
     try:
-        print(f"Chat endpoint called for user: {user_id}")  # Debug log
+        print(f"Chat endpoint called for user: {current_user_id}")  # Debug log
         print(f"Received message: {request.message}")  # Debug log
 
         # Create or get conversation ID
         if not request.conversation_id:
-            conversation_id = await create_conversation(user_id)
+            conversation_id = await create_conversation(current_user_id)
             print(f"Created new conversation: {conversation_id}")  # Debug log
         else:
-            conversation_id = UUID(request.conversation_id)
+            conversation_id = request.conversation_id
             print(f"Using existing conversation: {conversation_id}")  # Debug log
 
         # Get conversation history and simplify messages for the agent
@@ -70,13 +70,13 @@ async def chat_endpoint(
         # Process message with AI agent
         # Note: Using agent without MCP tools to avoid connection issues
         print("Creating TodoChatAgent...")  # Debug log
-        agent = TodoChatAgent(user_id=user_id)
+        agent = TodoChatAgent(user_id=current_user_id)
         print("Processing message with agent...")  # Debug log
 
         result = await agent.process_message(
             user_message=request.message,
             conversation_history=simple_history,
-            user_id=user_id
+            user_id=current_user_id
         )
         print(f"Agent response: {result['response'][:100]}...")  # Debug log
 
@@ -112,10 +112,10 @@ async def chat_endpoint(
                                 break
 
                 if title and len(title.strip()) > 0:
-                    print(f"Attempting to persist auto-created task for user {user_id}: {title}")
+                    print(f"Attempting to persist auto-created task for user {current_user_id}: {title}")
                     from app.core.database import async_session_maker
                     from app.services.task_service import create_task
-                    from app.schemas.extended import TaskCreateExtended
+                    from app.schemas.task import TaskCreate
                     from app.models.task import TaskPriority, RecurrencePattern
                     import traceback
 
@@ -267,14 +267,14 @@ async def chat_endpoint(
                         description = desc_match.group(1).strip()
 
                     async with async_session_maker() as db:
-                        task_payload = TaskCreateExtended(
+                        task_payload = TaskCreate(
                             title=title,
                             description=description,
                             priority=priority,
                             due_date=due_date,
                             recurrence_pattern=recurrence_pattern
                         )
-                        task = await create_task(db, user_id, task_payload)
+                        task = await create_task(db, current_user_id, task_payload)
 
                         # Create reminder if specified
                         if reminder_time:
@@ -351,12 +351,12 @@ async def chat_endpoint(
 
 
 @router.get("/conversations")
-async def list_conversations(user_id: str = Depends(get_current_user_id)):
+async def list_conversations(current_user_id: VerifiedUserIdFromToken):
     """List user's conversations."""
     from app.services.conversation_service import list_user_conversations
-    from uuid import UUID
+    pass
 
-    conversations = await list_user_conversations(UUID(user_id))
+    conversations = await list_user_conversations(current_user_id)
     return {
         "conversations": [
             {
@@ -372,21 +372,20 @@ async def list_conversations(user_id: str = Depends(get_current_user_id)):
 @router.get("/conversations/{conversation_id}/messages")
 async def get_conversation_messages(
     conversation_id: str,
-    user_id: str = Depends(get_current_user_id)
+    current_user_id: VerifiedUserIdFromToken
 ):
     """Get messages for a specific conversation."""
-    from uuid import UUID
+    pass
     from sqlmodel import select
     from app.models.conversation import Conversation
     from app.core.database import async_session_maker
 
-    conv_uuid = UUID(conversation_id)
-
+    from uuid import UUID
     # Verify conversation belongs to user
     async with async_session_maker() as session:
         stmt = select(Conversation).where(
-            Conversation.conversation_id == conv_uuid,
-            Conversation.user_id == UUID(user_id)
+            Conversation.conversation_id == UUID(conversation_id),
+            Conversation.user_id == current_user_id
         )
         result = await session.execute(stmt)
         conversation = result.scalar_one_or_none()
