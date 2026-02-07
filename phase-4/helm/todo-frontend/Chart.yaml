@@ -1,0 +1,17 @@
+apiVersion: v2
+name: todo-frontend
+version: 0.1.0
+appVersion: "1.0.0"
+description: A Helm chart for the Todo App frontend service
+type: application
+keywords:
+  - todo
+  - frontend
+  - nextjs
+  - react
+home: https://github.com/Aqsagull99/hackathon-2-todo-app
+sources:
+  - https://github.com/Aqsagull99/hackathon-2-todo-app
+maintainers:
+  - name: Todo App Team
+icon: https://raw.githubusercontent.com/Aqsagull99/hackathon-2-todo-app/main/logo.png

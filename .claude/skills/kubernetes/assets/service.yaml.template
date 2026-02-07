@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: PLACEHOLDER_APP_NAME-service
+  labels:
+    app: PLACEHOLDER_APP_NAME
+spec:
+  selector:
+    app: PLACEHOLDER_APP_NAME
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: PLACEHOLDER_APP_NAME-headless
+  labels:
+    app: PLACEHOLDER_APP_NAME
+spec:
+  selector:
+    app: PLACEHOLDER_APP_NAME
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http
+  clusterIP: None
+  type: ClusterIP

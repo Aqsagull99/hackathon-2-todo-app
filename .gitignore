@@ -82,6 +82,9 @@ todo-cluster-kubeconfig.yaml
 .*
 !.gitignore
 !.claude/
+ phase-two
+!.claude/**
+main
 
 # Python
 __pycache__/
