@@ -1,0 +1,206 @@
+# DigitalOcean Kubernetes Deployment for Phase V
+#
+# SECURITY NOTICE: This file does NOT contain any hardcoded secrets.
+# All sensitive data must be provided via Kubernetes Secrets before deployment.
+#
+# Prerequisites:
+# 1. Create secrets manually using kubectl:
+#    kubectl create secret generic neon-db-secret --from-literal=backend-db-url="<DATABASE_URL>"
+#    kubectl create secret generic todo-app-secrets --from-literal=JWT_SECRET="<JWT_SECRET>" --from-literal=BETTER_AUTH_SECRET="<AUTH_SECRET>"
+#
+# 2. OR use the deploy-to-digitalocean.sh script which handles secret creation from environment variables
+
+---
+# 1. Neon Database Secret (Create this manually or via deployment script)
+# kubectl create secret generic neon-db-secret \
+#   --from-literal=backend-db-url="postgresql+asyncpg://<USER>:<PASSWORD>@<HOST>/<DATABASE>?ssl=require"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neon-db-secret
+type: Opaque
+data:
+  # Base64 encoded database connection string
+  # REPLACE WITH YOUR OWN: echo -n "postgresql+asyncpg://..." | base64
+  backend-db-url: <BASE64_ENCODED_DATABASE_URL>
+
+---
+# 2. Application Secrets (Create this manually or via deployment script)
+# kubectl create secret generic todo-app-secrets \
+#   --from-literal=JWT_SECRET="<YOUR_JWT_SECRET>" \
+#   --from-literal=BETTER_AUTH_SECRET="<YOUR_AUTH_SECRET>"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todo-app-secrets
+type: Opaque
+data:
+  # Base64 encoded JWT secret
+  # REPLACE WITH YOUR OWN: echo -n "your-secret-key" | base64
+  JWT_SECRET: <BASE64_ENCODED_JWT_SECRET>
+
+  # Base64 encoded Better Auth secret
+  # REPLACE WITH YOUR OWN: echo -n "your-auth-secret" | base64
+  BETTER_AUTH_SECRET: <BASE64_ENCODED_BETTER_AUTH_SECRET>
+
+---
+# 3. Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-backend
+  template:
+    metadata:
+      labels:
+        app: todo-backend
+    spec:
+      containers:
+      - name: todo-backend
+        image: aqsagull/todo-backend:v4
+        imagePullPolicy: Always
+        command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+        env:
+        # Database connection from secret
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: neon-db-secret
+              key: backend-db-url
+
+        # JWT secret from secret
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-app-secrets
+              key: JWT_SECRET
+
+        # Python path configuration
+        - name: PYTHONPATH
+          value: "."
+
+        ports:
+        - containerPort: 8000
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# 4. Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-frontend
+  template:
+    metadata:
+      labels:
+        app: todo-frontend
+    spec:
+      containers:
+      - name: todo-frontend
+        image: aqsagull/todo-frontend:v1
+        env:
+        # Backend API URL - Update this with your actual backend service endpoint
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://<BACKEND_EXTERNAL_IP_OR_DOMAIN>"
+
+        # Better Auth Secret from secret
+        - name: BETTER_AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-app-secrets
+              key: BETTER_AUTH_SECRET
+
+        # Better Auth URL - Update this with your actual frontend domain
+        - name: BETTER_AUTH_URL
+          value: "http://<FRONTEND_EXTERNAL_IP_OR_DOMAIN>"
+
+        ports:
+        - containerPort: 3000
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# 5. Backend Service (LoadBalancer for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-backend
+spec:
+  type: LoadBalancer
+  selector:
+    app: todo-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+
+---
+# 6. Frontend Service (LoadBalancer for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: todo-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+
+---
+# Deployment Instructions:
+#
+# 1. Create secrets first:
+#    kubectl create secret generic neon-db-secret \
+#      --from-literal=backend-db-url="postgresql+asyncpg://USER:PASS@HOST/DB?ssl=require"
+#
+#    kubectl create secret generic todo-app-secrets \
+#      --from-literal=JWT_SECRET="your-jwt-secret" \
+#      --from-literal=BETTER_AUTH_SECRET="your-auth-secret"
+#
+# 2. Apply this deployment:
+#    kubectl apply -f digitalocean-deployment.yaml
+#
+# 3. Get external IPs:
+#    kubectl get services
+#
+# 4. Update NEXT_PUBLIC_API_URL and BETTER_AUTH_URL in frontend deployment with actual IPs
+#    kubectl edit deployment todo-frontend
+#
+# 5. Restart frontend to apply changes:
+#    kubectl rollout restart deployment/todo-frontend

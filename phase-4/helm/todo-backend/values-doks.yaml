@@ -1,0 +1,48 @@
+replicaCount: 3
+
+image:
+  repository: registry.digitalocean.com/todo/backend
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: api.todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: todo-backend-tls
+      hosts:
+        - api.todo-app.example.com
+
+dapr:
+  enabled: true
+  appId: "todo-backend"
+  appPort: "8000"
+  logLevel: "info"
+
+database:
+  deployLocal: false
+  # Use Neon PostgreSQL connection from secret

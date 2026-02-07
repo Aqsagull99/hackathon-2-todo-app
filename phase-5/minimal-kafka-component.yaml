@@ -1,0 +1,28 @@
+# Minimal Kafka Component for Local Testing
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "localhost:9092"  # Using localhost for local testing instead of Redpanda Cloud
+  - name: consumerGroup
+    value: "todo-app-group"
+  - name: clientId
+    value: "todo-backend-client"
+  - name: authType
+    value: "none"  # No authentication for local testing
+  - name: maxMessageBytes
+    value: "1024000"
+  - name: consumeRetryInterval
+    value: "200ms"
+  - name: dialTimeout
+    value: "30s"
+  - name: readTimeout
+    value: "30s"
+  - name: writeTimeout
+    value: "30s"

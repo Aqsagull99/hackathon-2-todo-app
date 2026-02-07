@@ -1,0 +1,12 @@
+apiVersion: v2
+name: dapr-components
+version: 0.1.0
+description: Dapr components for Todo App Phase V
+type: application
+keywords:
+  - dapr
+  - pub-sub
+  - state-store
+  - kafka
+  - postgresql
+  - event-driven

@@ -1,0 +1,30 @@
+replicaCount: 1
+
+image:
+  repository: todo-backend
+  pullPolicy: Never
+  tag: "latest"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+dapr:
+  enabled: true
+  appId: "todo-backend"
+  appPort: "8000"
+  logLevel: "debug"
+
+database:
+  deployLocal: false
+  host: "host.minikube.internal"
+  port: "5432"
