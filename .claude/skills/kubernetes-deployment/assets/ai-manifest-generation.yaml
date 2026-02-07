@@ -1,0 +1,331 @@
+# AI-Assisted Kubernetes Manifest Generation Template
+# This template demonstrates best practices for generating Kubernetes manifests with AI assistance
+
+---
+# Example: Secure Deployment Generated with AI Assistance
+# Prompt: "Create a secure, production-ready Deployment for a Node.js application with proper resource management, security context, and health checks"
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-generated-app
+  namespace: production
+  labels:
+    app: ai-generated-app
+    version: v1.0.0
+    environment: production
+  annotations:
+    description: "AI-generated deployment with security best practices"
+    generation-tool: "AI-assisted-k8s-manifest-generator"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-generated-app
+  template:
+    metadata:
+      labels:
+        app: ai-generated-app
+    spec:
+      # Pod-level security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: app
+        image: my-nodejs-app:latest
+        # Container-level security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - containerPort: 8080
+        env:
+        # Use downward API to get pod information
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        # Use secrets for sensitive data
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: db-password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+---
+# Associated Service for the AI-generated Deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-generated-app-service
+  namespace: production
+  labels:
+    app: ai-generated-app
+  annotations:
+    description: "Service for AI-generated application"
+spec:
+  selector:
+    app: ai-generated-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    name: http
+  type: ClusterIP
+---
+# Network Policy for AI-generated Application
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-generated-app-network-policy
+  namespace: production
+  labels:
+    app: ai-generated-app
+  annotations:
+    description: "Network policy for AI-generated application"
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-generated-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx  # Allow ingress controller
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to: []  # Allow all egress (customize as needed)
+    ports:
+    - protocol: TCP
+      port: 53  # DNS
+    - protocol: UDP
+      port: 53  # DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: database  # Allow database access
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+---
+# Horizontal Pod Autoscaler for AI-generated Application
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-generated-app-hpa
+  namespace: production
+  labels:
+    app: ai-generated-app
+  annotations:
+    description: "HPA for AI-generated application"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-generated-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+
+---
+# AI-Assisted Manifest Generation Workflow
+# This section provides a template for the AI-assisted generation workflow
+
+# 1. Initial AI Prompt Template
+# Use this template when requesting initial manifests from AI:
+# """
+# Create a production-ready Kubernetes Deployment for [APPLICATION_NAME] that:
+# - Uses image [IMAGE_NAME:TAG]
+# - Runs [REPLICA_COUNT] replicas
+# - Exposes port [PORT_NUMBER]
+# - Includes resource requests/limits (memory: [REQUEST]/[LIMIT], cpu: [REQUEST]/[LIMIT])
+# - Has proper liveness and readiness probes checking [/HEALTH_ENDPOINT]
+# - Uses security context with non-root user and dropped capabilities
+# - Includes proper labels and annotations for monitoring
+# """
+
+# 2. Validation Commands for AI-Generated Manifests
+# Run these commands to validate any AI-generated manifest:
+
+# Schema validation
+# kubeval --strict your-ai-generated-manifest.yaml
+
+# Best practices validation
+# kube-score score your-ai-generated-manifest.yaml
+
+# Dry-run application
+# kubectl apply --dry-run=client -f your-ai-generated-manifest.yaml
+
+# Security validation
+# Check for security issues
+# grep -i "privileged\|allowprivilegeescalation\|hostpath\|hostnetwork" your-ai-generated-manifest.yaml
+
+# 3. Iterative Refinement Prompts
+# Use these prompts to refine AI-generated manifests:
+
+# For adding security:
+# "Add security context to this manifest to run as non-root with minimal capabilities"
+
+# For adding resources:
+# "Add appropriate resource requests and limits to this manifest based on typical usage patterns"
+
+# For adding health checks:
+# "Add liveness and readiness probes to this manifest, checking appropriate endpoints"
+
+# For adding monitoring:
+# "Add standard monitoring labels and annotations to this manifest"
+
+# 4. Human Review Checklist for AI-Generated Manifests
+# Before applying any AI-generated manifest, verify:
+
+# [ ] API versions are current and not deprecated
+# [ ] Resource requests/limits are appropriate for production
+# [ ] Security contexts are properly configured
+# [ ] Labels follow organizational standards
+# [ ] Network policies are defined for the application
+# [ ] Secrets are used for sensitive data instead of hardcoded values
+# [ ] Health checks are appropriate for the application type
+# [ ] RBAC permissions are properly configured if needed
+# [ ] Storage configurations are appropriate if the application requires persistent storage
+
+# 5. Example of Refinement Process
+# Step 1: Basic generation
+# AI Prompt: "Create a basic Deployment for my-app using nginx:latest"
+# Result: Basic deployment without security/resources
+
+# Step 2: Add resources
+# AI Prompt: "Add resource requests and limits to this manifest (requests: 256Mi memory, 250m CPU; limits: 512Mi memory, 500m CPU)"
+# Result: Deployment with resource constraints
+
+# Step 3: Add security
+# AI Prompt: "Add security context to run as non-root user with minimal capabilities"
+# Result: Deployment with security context
+
+# Step 4: Add health checks
+# AI Prompt: "Add liveness and readiness probes to this manifest, checking /healthz endpoint"
+# Result: Deployment with health checks
+
+# Step 5: Add monitoring
+# AI Prompt: "Add standard monitoring labels and annotations to this manifest"
+# Result: Production-ready deployment with monitoring support
+
+---
+# Advanced AI Prompt Templates for Different Scenarios
+
+# For Stateful applications:
+# """
+# Create a production-ready StatefulSet for [APPLICATION_NAME] that:
+# - Uses image [IMAGE_NAME:TAG]
+# - Runs [REPLICA_COUNT] replicas
+# - Includes persistent storage with [STORAGE_SIZE] and [STORAGE_CLASS]
+# - Has proper headless service for stable network identities
+# - Includes resource requests/limits
+# - Has proper liveness and readiness probes
+# - Uses security context with non-root user
+# - Includes proper labels for monitoring
+# """
+
+# For DaemonSet applications:
+# """
+# Create a DaemonSet for [DAEMON_APPLICATION] that:
+# - Runs on all nodes with [NODE_SELECTOR]
+# - Uses image [IMAGE_NAME:TAG]
+# - Includes resource requests/limits
+# - Has proper security context for privileged operations if needed
+# - Includes proper tolerations for master nodes if needed
+# - Includes proper labels for monitoring
+# """
+
+# For Job applications:
+# """
+# Create a Kubernetes Job for [BATCH_TASK] that:
+# - Uses image [IMAGE_NAME:TAG]
+# - Completes after [COMPLETION_COUNT] successful runs
+# - Runs with [PARALLELISM] parallel pods maximum
+# - Includes resource requests/limits
+# - Has proper security context
+# - Includes proper labels for monitoring
+# - Includes backoff limit of [BACKOFF_LIMIT]
+# """

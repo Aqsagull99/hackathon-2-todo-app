@@ -1,0 +1,180 @@
+# Kubernetes Horizontal Pod Autoscaler Template
+# Before applying, ensure Metrics Server is deployed:
+# kubectl get apiservice v1beta1.metrics.k8s.io
+# kubectl top nodes
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: PLACEHOLDER_APP_NAME-hpa
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    environment: PLACEHOLDER_ENVIRONMENT
+  annotations:
+    # Add description and version annotations
+    description: "HPA for PLACEHOLDER_APP_NAME application"
+    version: "v1.0.0"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: PLACEHOLDER_APP_NAME
+  minReplicas: 2
+  maxReplicas: 10
+  # Target utilization percentages for auto-scaling
+  metrics:
+  # Resource-based metrics
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Scale when average CPU usage reaches 70%
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # Scale when average memory usage reaches 80%
+  # Custom pod metrics (requires metrics adapter like Prometheus Adapter)
+  - type: Pods
+    pods:
+      metric:
+        name: requests-per-second
+      target:
+        type: AverageValue
+        averageValue: "1k"  # Scale when average requests per second per pod reaches 1000
+  # Object metrics (for external resources like ingress controllers)
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: PLACEHOLDER_APP_NAME-ingress
+      target:
+        type: Value
+        value: "10k"  # Scale when total requests per second reaches 10,000
+  # Container resource metrics (for multi-container pods)
+  - type: ContainerResource
+    containerResource:
+      name: cpu
+      container: PLACEHOLDER_APP_NAME
+      target:
+        type: Utilization
+        averageUtilization: 75  # Scale based on specific container CPU usage
+  # Behavior configuration for scaling operations
+  behavior:
+    scaleDown:
+      # How long to wait after a scale-down before another one
+      # Prevents flapping and service disruption
+      stabilizationWindowSeconds: 300  # 5 minutes
+      policies:
+      # Scale down gradually (10% of current replicas per minute)
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      # Scale down gradually (maximum 2 pods per minute)
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      # Choose the most restrictive policy
+      selectPolicy: Min
+    scaleUp:
+      # How long to wait after a scale-up before another one
+      # Usually shorter for quick response to load increases
+      stabilizationWindowSeconds: 60  # 1 minute
+      policies:
+      # Scale up quickly (maximum 100% of current replicas per 30 seconds)
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      # Scale up quickly (maximum 4 pods per 30 seconds)
+      - type: Pods
+        value: 4
+        periodSeconds: 30
+      # Choose the most aggressive policy for quick scaling
+      selectPolicy: Max
+---
+# Alternative HPA for AI/ML Workloads with Specialized Metrics
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: PLACEHOLDER_AI_APP_NAME-ai-hpa
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_AI_APP_NAME
+    workload-type: ai-inference
+    environment: PLACEHOLDER_ENVIRONMENT
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: PLACEHOLDER_AI_APP_NAME
+  minReplicas: 1
+  maxReplicas: 50
+  metrics:
+  # CPU utilization (baseline scaling)
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  # GPU utilization (for GPU-accelerated AI workloads)
+  - type: Pods
+    pods:
+      metric:
+        name: gpu.utilization
+      target:
+        type: AverageValue
+        averageValue: "70"  # Average GPU utilization target
+  # Queue depth (for batch processing)
+  - type: Pods
+    pods:
+      metric:
+        name: inference_queue_depth
+      target:
+        type: AverageValue
+        averageValue: "50"  # Average queue length per pod
+  # Request duration (to maintain quality of service)
+  - type: Pods
+    pods:
+      metric:
+        name: request_duration_seconds
+      target:
+        type: AverageValue
+        averageValue: "200m"  # 200 milliseconds average response time
+  # Model prediction rate
+  - type: Pods
+    pods:
+      metric:
+        name: predictions_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"  # 100 predictions per second per pod
+  behavior:
+    scaleDown:
+      # Longer stabilization window for AI workloads to avoid disrupting ongoing processing
+      stabilizationWindowSeconds: 600  # 10 minutes
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      # Faster scaling for AI inference to handle traffic spikes
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 30
+      - type: Pods
+        value: 5
+        periodSeconds: 30
+      selectPolicy: Max

@@ -1,0 +1,185 @@
+# Kubernetes Debugging Workflow Template
+# Follow this systematic approach for debugging Kubernetes resources
+
+---
+# 1. INITIAL STATUS CHECK
+# Commands to quickly assess the situation
+
+# Get basic status of all resources
+kubectl get all -n PLACEHOLDER_NAMESPACE
+
+# Get detailed information about a specific resource
+kubectl describe PLACEHOLDER_RESOURCE_TYPE PLACEHOLDER_RESOURCE_NAME -n PLACEHOLDER_NAMESPACE
+
+# Check cluster events for issues
+kubectl get events --sort-by='.lastTimestamp' -n PLACEHOLDER_NAMESPACE
+
+---
+# 2. POD-LEVEL DEBUGGING
+
+# Check pod status and conditions
+kubectl get pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE -o wide
+
+# Get detailed pod information including events
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+
+# Check pod logs
+kubectl logs PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+
+# Check logs from previous container instance (if restarted)
+kubectl logs PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE --previous
+
+# Execute commands inside the pod for debugging
+kubectl exec -it PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE -- /bin/sh
+
+---
+# 3. RESOURCE-SPECIFIC DEBUGGING
+
+# Services: Check endpoints and connectivity
+kubectl get endpoints PLACEHOLDER_SERVICE_NAME -n PLACEHOLDER_NAMESPACE
+kubectl describe service PLACEHOLDER_SERVICE_NAME -n PLACEHOLDER_NAMESPACE
+
+# Deployments: Check rollout status and events
+kubectl rollout status deployment/PLACEHOLDER_DEPLOYMENT_NAME -n PLACEHOLDER_NAMESPACE
+kubectl get deployment PLACEHOLDER_DEPLOYMENT_NAME -n PLACEHOLDER_NAMESPACE -o yaml
+
+# ConfigMaps and Secrets: Verify content
+kubectl get configmap PLACEHOLDER_CONFIGMAP_NAME -n PLACEHOLDER_NAMESPACE -o yaml
+kubectl get secret PLACEHOLDER_SECRET_NAME -n PLACEHOLDER_NAMESPACE -o yaml
+
+# Persistent Volumes: Check binding and status
+kubectl get pvc -n PLACEHOLDER_NAMESPACE
+kubectl describe pv PLACEHOLDER_PV_NAME
+
+---
+# 4. NODE-LEVEL DEBUGGING
+
+# Check node status
+kubectl get nodes
+
+# Get detailed node information
+kubectl describe node PLACEHOLDER_NODE_NAME
+
+# Check node resource usage
+kubectl top node PLACEHOLDER_NODE_NAME
+
+# Debug node issues with a debugging pod
+kubectl debug node/PLACEHOLDER_NODE_NAME -it --image=ubuntu
+
+---
+# 5. ADVANCED DEBUGGING TECHNIQUES
+
+# Create a debugging pod on the same node as a problematic pod
+kubectl debug PLACEHOLDER_POD_NAME -it --image=nicolaka/netshoot
+
+# Port forward to test service connectivity locally
+kubectl port-forward PLACEHOLDER_POD_NAME 8080:80 -n PLACEHOLDER_NAMESPACE
+
+# Check resource usage in real-time
+kubectl top pods -n PLACEHOLDER_NAMESPACE
+
+# Analyze resource metrics
+kubectl top nodes
+kubectl top pods --containers -n PLACEHOLDER_NAMESPACE
+
+---
+# 6. FAILURE STATE DIAGNOSIS
+
+# Pod in Pending state - usually scheduling issues
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+# Common causes:
+# - Insufficient resources (CPU/Memory)
+# - Node selector mismatches
+# - Taints and tolerations conflicts
+# - PersistentVolume binding issues
+
+# Pod in CrashLoopBackOff state - container keeps crashing
+kubectl logs PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+# Common causes:
+# - Application errors
+# - Missing configuration
+# - Incorrect resource limits
+# - Health check failures
+
+# Pod in Error state - permanent failure
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+# Check events for specific error messages
+
+---
+# 7. SYSTEMATIC FAILURE DIAGNOSIS PROCESS
+
+# 1. Check the pod status
+kubectl get pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+
+# 2. Examine pod events for immediate clues
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+
+# 3. Check related resources
+kubectl get events --sort-by='.lastTimestamp' -n PLACEHOLDER_NAMESPACE --field-selector involvedObject.name=PLACEHOLDER_POD_NAME
+
+# 4. Inspect logs
+kubectl logs PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE
+
+# 5. Check resource availability
+kubectl top nodes
+kubectl describe node PLACEHOLDER_NODE_NAME
+
+# 6. Validate configuration
+kubectl get -f PLACEHOLDER_MANIFEST_FILE.yaml -n PLACEHOLDER_NAMESPACE -o yaml
+
+---
+# 8. DIAGNOSTIC COMMANDS FOR COMMON ISSUES
+
+# Image pull issues
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE | grep -A 5 -B 5 "ErrImagePull\|ImagePullBackOff"
+
+# Resource issues
+kubectl top nodes
+kubectl describe pod PLACEHOLDER_POD_NAME -n PLACEHOLDER_NAMESPACE | grep -A 10 -B 10 "Insufficient\|Evicted"
+
+# Network issues
+kubectl describe service PLACEHOLDER_SERVICE_NAME -n PLACEHOLDER_NAMESPACE
+kubectl get endpoints PLACEHOLDER_SERVICE_NAME -n PLACEHOLDER_NAMESPACE
+
+# Storage issues
+kubectl describe pvc PLACEHOLDER_PVC_NAME -n PLACEHOLDER_NAMESPACE
+kubectl describe pv PLACEHOLDER_PV_NAME
+
+---
+# 9. DEBUGGING WORKFLOW CHECKLIST
+
+# For Application Issues:
+# - [ ] Check application logs
+# - [ ] Verify environment variables
+# - [ ] Validate configuration (ConfigMaps/Secrets)
+# - [ ] Test health checks manually
+# - [ ] Check resource limits
+
+# For Network Issues:
+# - [ ] Verify service configuration
+# - [ ] Check endpoints are populated
+# - [ ] Test connectivity between pods
+# - [ ] Validate network policies
+# - [ ] Check DNS resolution
+
+# For Resource Issues:
+# - [ ] Verify resource requests/limits
+# - [ ] Check node capacity
+# - [ ] Review QoS class assignment
+# - [ ] Monitor resource usage
+# - [ ] Check for resource quota violations
+
+# For Scheduling Issues:
+# - [ ] Verify node selectors and affinities
+# - [ ] Check taints and tolerations
+# - [ ] Validate resource availability
+# - [ ] Review pod priority
+# - [ ] Check namespace quotas
+
+# For Storage Issues:
+# - [ ] Verify PVC status and binding
+# - [ ] Check PV availability and access modes
+# - [ ] Validate storage class configuration
+# - [ ] Check for permission issues
+# - [ ] Review volume mount paths

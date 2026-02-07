@@ -1,0 +1,296 @@
+# Kubernetes Health Probes Configuration Template
+# This template provides comprehensive examples for configuring liveness, readiness, and startup probes
+
+---
+# Basic deployment with health probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-probes-example
+  labels:
+    app: health-probes-example
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: health-probes-example
+  template:
+    metadata:
+      labels:
+        app: health-probes-example
+    spec:
+      containers:
+      - name: app
+        image: my-app:latest
+        ports:
+        - containerPort: 8080
+        # Startup probe for slow-starting applications (e.g., AI models, databases)
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+          initialDelaySeconds: 30    # Allow time for application to start
+          periodSeconds: 10         # Check every 10 seconds
+          timeoutSeconds: 5         # Timeout after 5 seconds
+          failureThreshold: 60      # Allow up to 10 minutes (60 * 10s) for startup
+          successThreshold: 1       # Must be 1 for startup probes
+        # Liveness probe to detect and restart unhealthy containers
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 60   # Start after startup probe succeeds
+          periodSeconds: 30         # Check every 30 seconds
+          timeoutSeconds: 10        # Timeout after 10 seconds
+          failureThreshold: 3       # Restart after 3 consecutive failures
+          successThreshold: 1       # Must be 1 for liveness probes
+        # Readiness probe to control traffic routing
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 10   # Start early to route traffic when ready
+          periodSeconds: 5          # Check every 5 seconds
+          timeoutSeconds: 3         # Timeout after 3 seconds
+          failureThreshold: 3       # Remove from service after 3 failures
+          successThreshold: 1       # Mark as ready after 1 success
+---
+# AI/ML Workload with Extended Startup Time
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-workload-health-probes
+  labels:
+    app: ai-workload
+    workload-type: ai-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-workload
+  template:
+    metadata:
+      labels:
+        app: ai-workload
+        workload-type: ai-inference
+    spec:
+      containers:
+      - name: ai-model-server
+        image: ai-model-server:latest
+        ports:
+        - containerPort: 8080
+        # Extended startup probe for model loading
+        startupProbe:
+          httpGet:
+            path: /model-loaded
+            port: 8080
+          initialDelaySeconds: 60   # Allow time for model loading
+          periodSeconds: 30         # Check every 30 seconds (longer for slow startups)
+          timeoutSeconds: 30        # Longer timeout for model operations
+          failureThreshold: 40      # Allow up to 20 minutes (40 * 30s) for model loading
+          successThreshold: 1       # Success after first positive response
+        # Liveness probe for runtime health
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 120  # Start after startup probe succeeds
+          periodSeconds: 60         # Less frequent checks during runtime
+          timeoutSeconds: 15        # Longer timeout for AI operations
+          failureThreshold: 2       # Faster restart on failure for AI workloads
+          successThreshold: 1       # Must be 1 for liveness probes
+        # Readiness probe for traffic management
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 90   # Start after some initialization
+          periodSeconds: 10         # Regular checks for traffic readiness
+          timeoutSeconds: 10        # Timeout for readiness checks
+          failureThreshold: 3       # Remove from service after 3 failures
+          successThreshold: 1       # Mark as ready after 1 success
+---
+# Batch Processing Application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: batch-processor-health-probes
+  labels:
+    app: batch-processor
+    workload-type: batch-processing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: batch-processor
+  template:
+    metadata:
+      labels:
+        app: batch-processor
+        workload-type: batch-processing
+    spec:
+      containers:
+      - name: batch-processor
+        image: batch-processor:latest
+        ports:
+        - containerPort: 8080
+        # Startup probe for batch processor initialization
+        startupProbe:
+          exec:
+            command: ["/bin/sh", "-c", "test -f /app/initialized.flag"]
+          initialDelaySeconds: 30
+          periodSeconds: 15         # Check every 15 seconds
+          timeoutSeconds: 10        # Timeout after 10 seconds
+          failureThreshold: 40      # Allow up to 10 minutes for initialization
+          successThreshold: 1       # Success after first positive response
+        # Liveness probe to detect stuck processes
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "ps aux | grep -v grep | grep -q 'batch-worker'"]
+          initialDelaySeconds: 120  # Start after initialization
+          periodSeconds: 60         # Check every minute
+          timeoutSeconds: 15        # Timeout after 15 seconds
+          failureThreshold: 2       # Restart after 2 failures
+          successThreshold: 1       # Must be 1 for liveness probes
+        # Readiness probe to control traffic based on available capacity
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "test $(cat /app/available_slots 2>/dev/null || echo 0) -gt 0"]
+          initialDelaySeconds: 60   # Start after initialization
+          periodSeconds: 10         # Check every 10 seconds
+          timeoutSeconds: 5         # Timeout after 5 seconds
+          failureThreshold: 3       # Mark as not ready after 3 failures
+          successThreshold: 1       # Mark as ready after 1 success
+---
+# Database with TCP Socket Probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-health-probes
+  labels:
+    app: database
+    workload-type: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+        workload-type: database
+    spec:
+      containers:
+      - name: database
+        image: postgres:13
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "myapp"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+        # Startup probe using TCP socket
+        startupProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 60      # Allow up to 10 minutes for database startup
+          successThreshold: 1
+        # Liveness probe using TCP socket
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 120  # Wait for database to fully initialize
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5       # More tolerant for database connections
+          successThreshold: 1
+        # Readiness probe using TCP socket
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+---
+# gRPC Service Probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-service-health-probes
+  labels:
+    app: grpc-service
+    workload-type: grpc
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: grpc-service
+  template:
+    metadata:
+      labels:
+        app: grpc-service
+        workload-type: grpc
+    spec:
+      containers:
+      - name: grpc-service
+        image: grpc-service:latest
+        ports:
+        - containerPort: 9000
+        # gRPC liveness probe
+        livenessProbe:
+          grpc:
+            port: 9000
+            service: grpc.health.v1.Health  # Optional: specify health service
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # gRPC readiness probe
+        readinessProbe:
+          grpc:
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+---
+# Debugging Commands for Health Probes
+# Use these commands to diagnose probe-related issues:
+
+# 1. Check pod status and events for probe failures
+# kubectl describe pod <pod-name> -n <namespace> | grep -A 10 -B 10 "Probe\|Unhealthy\|Restarted"
+
+# 2. View probe-specific events
+# kubectl get events -n <namespace> --field-selector involvedObject.kind=Pod,reason=Unhealthy
+
+# 3. Check logs around restart times
+# kubectl logs <pod-name> -n <namespace> --previous
+
+# 4. Test probe endpoints manually
+# kubectl port-forward <pod-name> 8080:8080 -n <namespace>
+# curl http://localhost:8080/healthz
+
+# 5. Monitor resource usage during probe execution
+# kubectl top pod <pod-name> -n <namespace>
+
+# 6. Get detailed probe configuration
+# kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.containers[0].livenessProbe}'
+# kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.containers[0].readinessProbe}'
+# kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.containers[0].startupProbe}'

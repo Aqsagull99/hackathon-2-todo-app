@@ -1,0 +1,193 @@
+# Kubernetes Quality of Service (QoS) Classes Configuration Template
+
+---
+# 1. GUARANTEED QoS CLASS
+# Requirements:
+# - Limits and requests must be equal for all resources
+# - Both memory and CPU must be specified
+# - Most stable, least likely to be evicted
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guaranteed-qos-app
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: guaranteed-qos-app
+  template:
+    metadata:
+      labels:
+        app: guaranteed-qos-app
+    spec:
+      containers:
+      - name: app
+        image: my-app:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          # FOR GUARANTEED QoS: requests MUST equal limits for all resources
+          requests:
+            memory: "1Gi"      # Equal to limit
+            cpu: "1000m"       # Equal to limit
+          limits:
+            memory: "1Gi"      # Equal to request
+            cpu: "1000m"       # Equal to request
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# 2. BURSTABLE QoS CLASS
+# Requirements:
+# - Requests are less than limits for at least one resource
+# - At least one resource has a request specified
+# - Moderate stability, may be evicted under pressure
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: burstable-qos-app
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: burstable-qos-app
+  template:
+    metadata:
+      labels:
+        app: burstable-qos-app
+    spec:
+      containers:
+      - name: app
+        image: my-app:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          # FOR BURSTABLE QoS: requests are less than limits for at least one resource
+          requests:
+            memory: "512Mi"    # Less than limit
+            cpu: "500m"        # Less than limit
+          limits:
+            memory: "2Gi"      # Higher than request
+            cpu: "2000m"       # Higher than request
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# 3. BESTEFFORT QoS CLASS
+# Requirements:
+# - No requests or limits specified
+# - Least stable, most likely to be evicted
+# - Use sparingly, typically for non-critical tasks
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: besteffort-qos-app
+  namespace: development
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: besteffort-qos-app
+  template:
+    metadata:
+      labels:
+        app: besteffort-qos-app
+    spec:
+      containers:
+      - name: app
+        image: my-app:latest
+        ports:
+        - containerPort: 8080
+        # FOR BESTEFFORT QoS: no requests or limits specified
+        # resources: {}  # Commented out - no resource specs
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# 4. MULTI-CONTAINER QoS EXAMPLE
+# When a pod has multiple containers, QoS class is determined by all containers
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container-qos-example
+  namespace: production
+spec:
+  containers:
+  # Container 1: Has requests and limits (will contribute to Burstable)
+  - name: main-app
+    image: my-app:latest
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  # Container 2: No requests or limits (would make it BestEffort)
+  # But since other containers have requests, this becomes Burstable
+  - name: sidecar
+    image: sidecar:latest
+    # resources: {}  # No resource specs
+---
+# 5. RESOURCE MANAGEMENT CHECKLIST
+# Use this checklist when configuring resources:
+
+# For Critical Applications (Production):
+# - [ ] Use Guaranteed QoS for mission-critical applications
+# - [ ] Set requests equal to limits for all resources
+# - [ ] Monitor resource usage vs limits
+# - [ ] Plan for peak loads when sizing resources
+
+# For Standard Applications:
+# - [ ] Use Burstable QoS for most applications
+# - [ ] Set conservative requests, generous limits
+# - [ ] Monitor for resource contention
+# - [ ] Plan for scaling based on resource usage
+
+# For Development/Testing:
+# - [ ] Consider BestEffort QoS for non-critical workloads
+# - [ ] Ensure proper resource quotas at namespace level
+# - [ ] Monitor for resource starvation
+# - [ ] Plan migration to Burstable for production workloads
+
+# For Batch Jobs:
+# - [ ] Use Burstable QoS with appropriate limits
+# - [ ] Set limits higher than expected usage
+# - [ ] Consider job-specific resource requirements
+# - [ ] Monitor completion times vs resource allocation

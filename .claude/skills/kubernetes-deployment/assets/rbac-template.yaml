@@ -1,0 +1,152 @@
+# Kubernetes RBAC Template
+# Comprehensive RBAC configuration with ServiceAccount, Role, and RoleBinding
+
+---
+# ServiceAccount for the application
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: PLACEHOLDER_APP_SA_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    environment: PLACEHOLDER_ENVIRONMENT
+    security-level: high
+  annotations:
+    description: "ServiceAccount for PLACEHOLDER_APP_NAME application"
+automountServiceAccountToken: true  # Set to false if pods don't need API access
+---
+# Role with minimal required permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: PLACEHOLDER_APP_ROLE_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    environment: PLACEHOLDER_ENVIRONMENT
+  annotations:
+    description: "Role for PLACEHOLDER_APP_NAME with minimal permissions"
+rules:
+# Pod access - for application health checks and monitoring
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+# Pod logs - for troubleshooting and monitoring
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+# ConfigMaps - for application configuration
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list"]
+# Secrets - for sensitive configuration
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+# Services - for service discovery
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list"]
+# Deployments - for application updates (limited to specific deployment)
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  resourceNames: ["PLACEHOLDER_APP_NAME"]  # Limited to specific deployment
+  verbs: ["get", "patch", "update"]
+# Events - for monitoring application events
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+---
+# RoleBinding to link ServiceAccount to Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: PLACEHOLDER_APP_ROLEBINDING_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    environment: PLACEHOLDER_ENVIRONMENT
+  annotations:
+    description: "RoleBinding for PLACEHOLDER_APP_NAME ServiceAccount"
+subjects:
+- kind: ServiceAccount
+  name: PLACEHOLDER_APP_SA_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+roleRef:
+  kind: Role
+  name: PLACEHOLDER_APP_ROLE_NAME
+  apiGroup: rbac.authorization.k8s.io
+---
+# Additional Role for monitoring components
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: PLACEHOLDER_MONITORING_ROLE_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    component: monitoring
+  annotations:
+    description: "Role for monitoring components with read-only access"
+rules:
+# Pod metrics access
+- apiGroups: [""]
+  resources: ["pods", "pods/metrics"]
+  verbs: ["get", "list", "watch"]
+# Node metrics access (if monitoring needs it)
+- apiGroups: [""]
+  resources: ["nodes", "nodes/metrics"]
+  verbs: ["get", "list", "watch"]
+# Events for monitoring
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+---
+# RoleBinding for monitoring ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: PLACEHOLDER_MONITORING_ROLEBINDING_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    component: monitoring
+  annotations:
+    description: "RoleBinding for monitoring components"
+subjects:
+- kind: ServiceAccount
+  name: PLACEHOLDER_MONITORING_SA_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+roleRef:
+  kind: Role
+  name: PLACEHOLDER_MONITORING_ROLE_NAME
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# RBAC Verification Commands
+# Use these commands to verify RBAC permissions before deployment:
+
+# 1. Verify ServiceAccount exists
+# kubectl get serviceaccount PLACEHOLDER_APP_SA_NAME -n PLACEHOLDER_NAMESPACE
+
+# 2. Check if ServiceAccount has required permissions
+# kubectl auth can-i get pods --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 3. Verify ServiceAccount can access ConfigMaps
+# kubectl auth can-i get configmaps --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 4. Verify ServiceAccount can access Secrets
+# kubectl auth can-i get secrets --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 5. Check if ServiceAccount can watch events
+# kubectl auth can-i watch events --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 6. Verify all permissions for the ServiceAccount
+# kubectl auth can-i --list --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 7. Test specific deployment access
+# kubectl auth can-i patch deployments/PLACEHOLDER_APP_NAME --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_APP_SA_NAME --namespace=PLACEHOLDER_NAMESPACE
+
+# 8. Verify monitoring permissions
+# kubectl auth can-i get pods/metrics --as=system:serviceaccount:PLACEHOLDER_NAMESPACE:PLACEHOLDER_MONITORING_SA_NAME --namespace=PLACEHOLDER_NAMESPACE

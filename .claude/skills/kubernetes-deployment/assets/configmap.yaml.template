@@ -1,0 +1,72 @@
+# Kubernetes ConfigMap Template
+# Use this template to define configuration data for your applications
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: PLACEHOLDER_CONFIG_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    environment: PLACEHOLDER_ENVIRONMENT
+  annotations:
+    description: "Configuration for PLACEHOLDER_APP_NAME"
+    version: "v1.0.0"
+data:
+  # Application configuration properties
+  LOG_LEVEL: "info"
+  DEBUG_MODE: "false"
+  API_TIMEOUT: "30s"
+  # Database configuration
+  DATABASE_HOST: "PLACEHOLDER_DB_HOST"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "PLACEHOLDER_DB_NAME"
+  # Feature flags
+  FEATURE_NEW_UI: "true"
+  FEATURE_ANALYTICS: "false"
+  # Other configuration
+  MAX_CONNECTIONS: "100"
+  CACHE_TTL: "300"
+---
+# Example of using ConfigMap in a Pod with different injection methods
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-example-pod
+  namespace: PLACEHOLDER_NAMESPACE
+spec:
+  containers:
+  - name: app
+    image: my-app:latest
+    # Method 1: Inject all ConfigMap values as environment variables
+    envFrom:
+    - configMapRef:
+        name: PLACEHOLDER_CONFIG_NAME
+    # Method 2: Inject specific values
+    env:
+    - name: CUSTOM_LOG_LEVEL
+      valueFrom:
+        configMapKeyRef:
+          name: PLACEHOLDER_CONFIG_NAME
+          key: LOG_LEVEL
+    # Method 3: Mount as volume
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config
+      readOnly: true
+    # Mount specific items only
+    - name: config-items
+      mountPath: /etc/app
+      readOnly: true
+  volumes:
+  - name: config-volume
+    configMap:
+      name: PLACEHOLDER_CONFIG_NAME
+  - name: config-items
+    configMap:
+      name: PLACEHOLDER_CONFIG_NAME
+      items:
+      - key: "application.properties"
+        path: "app.properties"
+      - key: "logback.xml"
+        path: "logging.xml"

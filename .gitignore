@@ -71,10 +71,17 @@ yarn-error.log*
 *.bak
 *.tmp
 
+# Kubernetes & Cloud Credentials (NEVER commit!)
+*kubeconfig*.yaml
+*kubeconfig*.yml
+*.kubeconfig
+todo-cluster-kubeconfig.yaml
+*.Zone.Identifier
 
 # System
 .*
 !.gitignore
+!.claude/
 
 # Python
 __pycache__/

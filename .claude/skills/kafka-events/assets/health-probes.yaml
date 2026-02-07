@@ -1,0 +1,399 @@
+# Kafka Application Health Probes Template
+# Use this template for configuring health checks for Kafka applications
+
+---
+# Kafka Application with Comprehensive Health Probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-health-probes-app
+  namespace: kafka-apps
+  labels:
+    app: kafka-health-probes-app
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka-health-probes-app
+  template:
+    metadata:
+      labels:
+        app: kafka-health-probes-app
+    spec:
+      containers:
+      - name: kafka-app
+        image: my-kafka-app:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+        # Liveness probe - checks if the application is alive
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60  # Allow time for AI model loading if needed
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+          successThreshold: 1
+        # Readiness probe - checks if the application is ready to serve traffic
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30  # Allow time for initialization
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # Startup probe - for applications with slow startup (like AI models)
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 40  # Allow up to 10 minutes for slow startups (40 * 15s)
+          successThreshold: 1
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-cluster:9092"
+        - name: KAFKA_CONSUMER_GROUP_ID
+          value: "kafka-health-probes-app-consumer-group"
+        - name: HEALTH_CHECK_TIMEOUT
+          value: "30s"
+        - name: STARTUP_TIMEOUT
+          value: "600s"  # 10 minutes for AI model loading
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+# Kafka Streams Application with Health Probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-streams-health-app
+  namespace: kafka-apps
+spec:
+  replicas: 1  # Kafka Streams applications should typically run as singletons per consumer group
+  selector:
+    matchLabels:
+      app: kafka-streams-health-app
+  template:
+    metadata:
+      labels:
+        app: kafka-streams-health-app
+    spec:
+      containers:
+      - name: kafka-streams-app
+        image: kafka-streams-app:latest
+        ports:
+        - containerPort: 8080
+        # Liveness probe for Kafka Streams
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 120  # Kafka Streams applications may take longer to initialize
+          periodSeconds: 60
+          timeoutSeconds: 15
+          failureThreshold: 3
+          successThreshold: 1
+        # Readiness probe for Kafka Streams
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+        # Startup probe for Kafka Streams (handles complex initialization)
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 20  # Allow up to 10 minutes for Kafka Streams startup (20 * 30s)
+          successThreshold: 1
+        env:
+        - name: APPLICATION_ID
+          value: "kafka-streams-health-app"
+        - name: BOOTSTRAP_SERVERS
+          value: "kafka-cluster:9092"
+        - name: STREAMS_STATE_DIR
+          value: "/tmp/kafka-streams"
+        - name: STARTUP_TIMEOUT
+          value: "600s"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+---
+# Kafka Connect Application with Health Probes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connect-health-app
+  namespace: kafka-apps
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka-connect-health-app
+  template:
+    metadata:
+      labels:
+        app: kafka-connect-health-app
+    spec:
+      containers:
+      - name: kafka-connect
+        image: confluentinc/cp-kafka-connect:latest
+        ports:
+        - containerPort: 8083
+        # Liveness probe for Kafka Connect
+        livenessProbe:
+          httpGet:
+            path: /connectors
+            port: 8083
+          initialDelaySeconds: 90  # Kafka Connect takes time to initialize
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+          successThreshold: 1
+        # Readiness probe for Kafka Connect
+        readinessProbe:
+          httpGet:
+            path: /connectors
+            port: 8083
+          initialDelaySeconds: 45
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        # Startup probe for Kafka Connect
+        startupProbe:
+          httpGet:
+            path: /connectors
+            port: 8083
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 40  # Allow up to 10 minutes for Kafka Connect startup
+          successThreshold: 1
+        env:
+        - name: CONNECT_BOOTSTRAP_SERVERS
+          value: "kafka-cluster:9092"
+        - name: CONNECT_REST_ADVERTISED_HOST_NAME
+          value: "kafka-connect-health-app"
+        - name: CONNECT_GROUP_ID
+          value: "connect-cluster-group"
+        - name: CONNECT_CONFIG_STORAGE_TOPIC
+          value: "connect-configs"
+        - name: CONNECT_OFFSET_STORAGE_TOPIC
+          value: "connect-offsets"
+        - name: CONNECT_STATUS_STORAGE_TOPIC
+          value: "connect-status"
+        - name: CONNECT_KEY_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_VALUE_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_INTERNAL_KEY_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_INTERNAL_VALUE_CONVERTER
+          value: "org.apache.kafka.connect.json.JsonConverter"
+        - name: CONNECT_REST_PORT
+          value: "8083"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+---
+# Kafka Application Health Check Endpoints Implementation
+# Use these endpoints in your application code
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-health-checks-config
+  namespace: kafka-apps
+data:
+  health-endpoints.sh: |
+    #!/bin/bash
+    # Health check endpoints for Kafka applications
+
+    # Liveness endpoint - checks if the application process is running
+    # Returns 200 if the application is alive, 503 if not
+    check_liveness() {
+      if pgrep -f "java.*kafka" > /dev/null; then
+        echo "HTTP/1.1 200 OK"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "UP", "timestamp": "'$(date -Iseconds)'"}'
+      else
+        echo "HTTP/1.1 503 Service Unavailable"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "DOWN", "timestamp": "'$(date -Iseconds)'"}'
+      fi
+    }
+
+    # Readiness endpoint - checks if the application is ready to serve requests
+    # Returns 200 if the application is ready, 503 if not
+    check_readiness() {
+      # Check Kafka connectivity
+      if nc -z kafka-cluster 9092; then
+        # Check if consumer group is active
+        if /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server kafka-cluster:9092 --describe --group my-consumer-group >/dev/null 2>&1; then
+          echo "HTTP/1.1 200 OK"
+          echo "Content-Type: application/json"
+          echo ""
+          echo '{"status": "READY", "kafka": "CONNECTED", "consumer_group": "ACTIVE", "timestamp": "'$(date -Iseconds)'"}'
+        else
+          echo "HTTP/1.1 503 Service Unavailable"
+          echo "Content-Type: application/json"
+          echo ""
+          echo '{"status": "NOT_READY", "reason": "Consumer group not active", "timestamp": "'$(date -Iseconds)'"}'
+        fi
+      else
+        echo "HTTP/1.1 503 Service Unavailable"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "NOT_READY", "reason": "Kafka connection failed", "timestamp": "'$(date -Iseconds)'"}'
+      fi
+    }
+
+    # Startup endpoint - checks if the application has completed initialization
+    # Returns 200 if startup is complete, 503 if still starting
+    check_startup() {
+      # Check if application-specific startup tasks are complete
+      # For AI applications, this might check if models are loaded
+      if [ -f /app/.startup_complete ]; then
+        echo "HTTP/1.1 200 OK"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "STARTED", "startup_complete": true, "timestamp": "'$(date -Iseconds)'"}'
+      else
+        echo "HTTP/1.1 503 Service Unavailable"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "STARTING", "startup_complete": false, "timestamp": "'$(date -Iseconds)'"}'
+      fi
+    }
+
+    # Handle HTTP request based on path
+    case $REQUEST_PATH in
+      "/healthz")
+        check_liveness
+        ;;
+      "/readyz")
+        check_readiness
+        ;;
+      "/startup")
+        check_startup
+        ;;
+      *)
+        echo "HTTP/1.1 404 Not Found"
+        echo "Content-Type: application/json"
+        echo ""
+        echo '{"status": "NOT_FOUND", "timestamp": "'$(date -Iseconds)'"}'
+        ;;
+    esac
+  startup-check.java: |
+    // Java implementation for Kafka Streams startup check
+    // This implementation tracks when the Kafka Streams application is fully started
+
+    import org.apache.kafka.streams.KafkaStreams;
+    import org.springframework.boot.actuate.health.Health;
+    import org.springframework.boot.actuate.health.HealthIndicator;
+    import org.springframework.stereotype.Component;
+
+    @Component
+    public class KafkaStreamsStartupIndicator implements HealthIndicator {
+
+        private final KafkaStreams kafkaStreams;
+
+        public KafkaStreamsStartupIndicator(KafkaStreams kafkaStreams) {
+            this.kafkaStreams = kafkaStreams;
+        }
+
+        @Override
+        public Health health() {
+            KafkaStreams.State state = kafkaStreams.state();
+
+            if (state == KafkaStreams.State.RUNNING) {
+                // Additional checks for AI model loading if applicable
+                if (isAIModelLoaded()) {
+                    return Health.up()
+                        .withDetail("status", "RUNNING")
+                        .withDetail("ai_model_loaded", true)
+                        .build();
+                } else {
+                    return Health.outOfService()
+                        .withDetail("status", "STARTING")
+                        .withDetail("ai_model_loaded", false)
+                        .build();
+                }
+            } else if (state.isRunning()) {
+                return Health.up()
+                    .withDetail("status", state.toString())
+                    .build();
+            } else {
+                return Health.down()
+                    .withDetail("status", state.toString())
+                    .build();
+            }
+        }
+
+        private boolean isAIModelLoaded() {
+            // Implementation to check if AI model is loaded
+            // This could check for model files, model readiness flags, etc.
+            return true; // Placeholder implementation
+        }
+    }
+
+    // Additional health indicator for AI-specific readiness
+    @Component("aiReadinessIndicator")
+    public class AIReadinessIndicator implements HealthIndicator {
+
+        @Override
+        public Health health() {
+            if (isAIReady()) {
+                return Health.up()
+                    .withDetail("ai_component", "READY")
+                    .withDetail("model_loaded", true)
+                    .build();
+            } else {
+                return Health.outOfService()
+                    .withDetail("ai_component", "NOT_READY")
+                    .withDetail("model_loaded", false)
+                    .build();
+            }
+        }
+
+        private boolean isAIReady() {
+            // Check if AI model is loaded and ready for inference
+            // Implementation depends on specific AI framework used
+            return true; // Placeholder implementation
+        }
+    }

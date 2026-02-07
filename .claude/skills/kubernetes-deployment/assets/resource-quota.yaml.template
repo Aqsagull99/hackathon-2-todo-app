@@ -1,0 +1,25 @@
+# ResourceQuota Template
+# Apply to namespace to limit resource consumption
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: PLACEHOLDER_QUOTA_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "PLACEHOLDER_CPU_REQUEST_LIMIT"
+    limits.cpu: "PLACEHOLDER_CPU_LIMIT"
+    requests.memory: PLACEHOLDER_MEMORY_REQUEST_LIMIT
+    limits.memory: PLACEHOLDER_MEMORY_LIMIT
+    # Storage resources
+    requests.storage: PLACEHOLDER_STORAGE_LIMIT
+    persistentvolumeclaims: "PLACEHOLDER_PVC_LIMIT"
+    # Object counts
+    pods: "PLACEHOLDER_MAX_PODS"
+    services: "PLACEHOLDER_MAX_SERVICES"
+    secrets: "PLACEHOLDER_MAX_SECRETS"
+    configmaps: "PLACEHOLDER_MAX_CONFIGMAPS"
+    replicationcontrollers: "PLACEHOLDER_MAX_REPLICAS"
+    resourcequotas: "1"  # Limit to 1 quota per namespace

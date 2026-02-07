@@ -1,0 +1,144 @@
+# Multi-Environment Namespace Strategy Template
+
+---
+# Development Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+  labels:
+    environment: development
+    team: developers
+    security-level: low
+  annotations:
+    description: "Development environment for feature testing"
+    owner: "development-team@example.com"
+---
+# Development ResourceQuota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: dev-quota
+  namespace: development
+spec:
+  hard:
+    requests.cpu: "8"
+    limits.cpu: "16"
+    requests.memory: 16Gi
+    limits.memory: 32Gi
+    pods: "30"
+    services: "15"
+    secrets: "20"
+    configmaps: "20"
+---
+# Development LimitRange
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: dev-limits
+  namespace: development
+spec:
+  limits:
+  - type: Container
+    max:
+      cpu: "1"
+      memory: 1Gi
+    min:
+      cpu: "10m"
+      memory: 10Mi
+    default:
+      cpu: "100m"
+      memory: 128Mi
+    defaultRequest:
+      cpu: "50m"
+      memory: 64Mi
+    maxLimitRequestRatio:
+      cpu: "4"
+      memory: "2"
+---
+# Staging Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    environment: staging
+    team: qa
+    security-level: medium
+  annotations:
+    description: "Staging environment for pre-production testing"
+    owner: "qa-team@example.com"
+---
+# Staging ResourceQuota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: staging
+spec:
+  hard:
+    requests.cpu: "4"
+    limits.cpu: "8"
+    requests.memory: 8Gi
+    limits.memory: 16Gi
+    pods: "20"
+    services: "10"
+    secrets: "15"
+    configmaps: "15"
+---
+# Production Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    environment: production
+    team: ops
+    criticality: high
+    security-level: high
+  annotations:
+    description: "Production environment for live applications"
+    owner: "operations-team@example.com"
+    compliance: "PCI-DSS,SOC2"
+---
+# Production ResourceQuota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: prod-quota
+  namespace: production
+spec:
+  hard:
+    requests.cpu: "32"
+    limits.cpu: "64"
+    requests.memory: 64Gi
+    limits.memory: 128Gi
+    pods: "100"
+    services: "50"
+    secrets: "50"
+    configmaps: "50"
+---
+# Production LimitRange
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: prod-limits
+  namespace: production
+spec:
+  limits:
+  - type: Container
+    max:
+      cpu: "2"
+      memory: 2Gi
+    min:
+      cpu: "100m"
+      memory: 64Mi
+    default:
+      cpu: "500m"
+      memory: 1Gi
+    defaultRequest:
+      cpu: "200m"
+      memory: 512Mi
+    maxLimitRequestRatio:
+      cpu: "2"
+      memory: "2"
