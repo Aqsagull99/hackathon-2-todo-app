@@ -1,0 +1,99 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-with-quality-gates
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/myorg/myapp.git
+    targetRevision: HEAD
+    path: manifests-with-quality-gates
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /status
+  - group: argoproj.io
+    kind: Application
+    jsonPointers:
+    - /status/operationState
+---
+# PreSync hook for integration tests
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: integration-tests-presync
+  namespace: production
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  template:
+    spec:
+      containers:
+      - name: test-runner
+        image: alpine:latest
+        command:
+        - sh
+        - -c
+        - |
+          # Run pre-deployment quality checks
+          echo "Running integration tests..."
+
+          # Simulate test execution
+          # In real scenario, this would test against staging environment
+          sleep 10
+
+          # Example: Check if staging service is responsive
+          if [ $? -eq 0 ]; then
+            echo "✓ All quality gates passed"
+            exit 0
+          else
+            echo "✗ Quality gates failed - blocking deployment"
+            exit 1
+          fi
+      restartPolicy: Never
+  backoffLimit: 1
+---
+# PostSync hook for notifications
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deployment-notification-postsync
+  namespace: production
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  template:
+    spec:
+      containers:
+      - name: notifier
+        image: curlimages/curl
+        command:
+        - sh
+        - -c
+        - |
+          echo "Deployment completed successfully"
+          # In real scenario, this would send notification to Slack, email, etc.
+      restartPolicy: Never
+  backoffLimit: 2

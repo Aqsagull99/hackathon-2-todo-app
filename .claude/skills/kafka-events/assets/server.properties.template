@@ -1,0 +1,103 @@
+# Kafka Server Properties Template for KRaft Mode
+# Save as server.properties
+#
+# Designed for event-driven architecture supporting:
+# - EDA fundamentals: Producers, consumers, and consistency models
+# - Decoupling patterns: Temporal, availability, and behavioral
+# - Eventual consistency: Supporting various consistency models
+
+# KRaft mode configuration (replaces ZooKeeper)
+process.roles=broker,controller
+node.id=1
+controller.quorum.bootstrap.servers=localhost:9093
+
+# Cluster ID (generate with: bin/kafka-storage.sh random-uuid)
+# Format storage: bin/kafka-storage.sh format --standalone -t <CLUSTER_ID> -c config/server.properties
+
+# Network listeners
+listeners=PLAINTEXT://:9092,CONTROLLER://:9093
+advertised.listeners=PLAINTEXT://localhost:9092
+inter.broker.listener.name=PLAINTEXT
+controller.listener.names=CONTROLLER
+listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL
+
+# Threading configuration
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+# Log storage - critical for EDA as it stores events when consumers are unavailable
+# Supports temporal and availability decoupling
+log.dirs=/tmp/kraft-combined-logs
+num.partitions=1
+num.recovery.threads.per.data.dir=2
+
+# Replication - ensures availability by maintaining copies across brokers
+# Critical for eventual consistency and behavioral decoupling
+offsets.topic.replication.factor=3
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+default.replication.factor=3
+min.insync.replicas=2
+
+# Share group coordinator (for share consumer groups)
+share.coordinator.state.topic.replication.factor=3
+share.coordinator.state.topic.min.isr=2
+
+# Log retention - supports temporal coupling by keeping events for processing when convenient
+# Also enables eventual consistency by maintaining events for delayed processing
+log.retention.hours=168
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+
+# Log cleanup policy
+log.cleanup.policy=delete
+log.cleaner.enable=true
+
+# Compression
+compression.type=producer
+
+# Additional settings for EDA fundamentals and decoupled architecture
+
+# Time to store a message before deleting it (addresses availability coupling)
+log.retention.ms=604800000  # 7 days
+
+# Maximum size of a message (impacts behavioral coupling through event contracts)
+message.max.bytes=1000012
+
+# Size of TCP send buffer (affects temporal coupling by impacting throughput)
+socket.send.buffer.bytes=102400
+
+# Size of TCP receive buffer (affects temporal coupling by impacting throughput)
+socket.receive.buffer.bytes=102400
+
+# EDA Consistency Settings
+
+# Minimum number of replicas that must acknowledge a write for it to be considered successful
+# Affects consistency guarantees (at-least-once vs exactly-once)
+min.insync.replicas=2
+
+# Transaction state log settings for exactly-once semantics
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+# Offset topic settings for consumer group management
+offsets.topic.replication.factor=3
+offsets.topic.num.partitions=50
+
+# Message timestamp settings for ordering guarantees
+message.timestamp.type=CreateTime
+log.message.timestamp.difference.max.ms=9223372036854775807
+
+# Settings for handling eventual consistency
+# Time to retain messages in the log before deletion
+log.retention.ms=604800000  # 7 days - allows consumers to catch up for eventual consistency
+
+# Segment size - affects how often logs are flushed to disk
+log.segment.bytes=1073741824  # 1GB
+
+# Settings for producer/consumer balance in EDA
+# How frequently to check if logs can be deleted based on retention policies
+log.retention.check.interval.ms=300000  # 5 minutes

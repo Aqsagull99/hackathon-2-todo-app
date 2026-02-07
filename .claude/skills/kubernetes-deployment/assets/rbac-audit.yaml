@@ -1,0 +1,204 @@
+# Kubernetes RBAC Audit and Verification Template
+# Use these commands and checks to audit RBAC configurations
+
+---
+# RBAC Audit Commands and Checks
+
+# 1. Check for overly permissive roles
+# Find roles with wildcard permissions
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rbac-audit-checks
+  namespace: kube-system
+  labels:
+    app: rbac-auditor
+data:
+  wildcard-check.sh: |
+    #!/bin/bash
+    echo "Checking for wildcard permissions in Roles and ClusterRoles..."
+
+    # Check for wildcard verbs (*)
+    kubectl get roles,clusterroles -A -o yaml | grep -A 5 -B 5 "verbs.*\*"
+
+    # Check for wildcard resources (*)
+    kubectl get roles,clusterroles -A -o yaml | grep -A 5 -B 5 "resources.*\*"
+
+    # Check for wildcard API groups (*)
+    kubectl get roles,clusterroles -A -o yaml | grep -A 5 -B 5 "apiGroups.*\*"
+
+    # Check for cluster-admin bindings
+    echo "Checking for cluster-admin bindings..."
+    kubectl get clusterrolebindings -o yaml | grep -A 5 -B 5 "cluster-admin"
+
+    # Check for system:masters group
+    echo "Checking for system:masters group..."
+    kubectl get clusterrolebindings -o yaml | grep -A 10 -B 10 "system:masters"
+
+    # Check for anonymous access
+    echo "Checking for anonymous access..."
+    kubectl get clusterrolebindings -o yaml | grep -A 10 -B 10 "system:unauthenticated"
+
+    # Check for ServiceAccounts with excessive permissions
+    echo "Checking for ServiceAccounts with excessive permissions..."
+    kubectl get rolebindings,clusterrolebindings -o yaml | grep -A 10 -B 10 "system:serviceaccount"
+  rbac-permission-check.sh: |
+    #!/bin/bash
+    echo "Verifying specific permissions for ServiceAccounts..."
+
+    # Function to check permissions for a specific ServiceAccount
+    check_permissions() {
+      local sa_name=$1
+      local sa_namespace=$2
+
+      echo "Checking permissions for ServiceAccount: $sa_name in namespace: $sa_namespace"
+
+      # Check all permissions
+      kubectl auth can-i --list --as=system:serviceaccount:$sa_namespace:$sa_name --namespace=$sa_namespace
+
+      # Specific checks
+      echo "Can $sa_name create pods?"
+      kubectl auth can-i create pods --as=system:serviceaccount:$sa_namespace:$sa_name --namespace=$sa_namespace
+
+      echo "Can $sa_name update deployments?"
+      kubectl auth can-i update deployments --as=system:serviceaccount:$sa_namespace:$sa_name --namespace=$sa_namespace
+
+      echo "Can $sa_name get secrets?"
+      kubectl auth can-i get secrets --as=system:serviceaccount:$sa_namespace:$sa_name --namespace=$sa_namespace
+    }
+
+    # Example usage (replace with actual SA names)
+    # check_permissions "my-app-sa" "default"
+    # check_permissions "monitoring-sa" "monitoring"
+  rbac-security-checks.sh: |
+    #!/bin/bash
+    echo "Running RBAC security checks..."
+
+    # Check for users with cluster-admin access
+    echo "=== Users with cluster-admin access ==="
+    kubectl get clusterrolebindings -o yaml | grep -A 10 -B 5 "cluster-admin" | grep -E "kind: User|name:" | paste - - | column -t
+
+    # Check for ServiceAccounts with cluster-admin access
+    echo -e "\n=== ServiceAccounts with cluster-admin access ==="
+    kubectl get clusterrolebindings -o yaml | grep -A 10 -B 5 "cluster-admin" | grep -E "kind: ServiceAccount|name:" | paste - - | column -t
+
+    # Check for roles with dangerous verbs
+    echo -e "\n=== Roles with potentially dangerous verbs ==="
+    kubectl get roles,clusterroles -A -o yaml | grep -B 3 -A 5 "verbs.*create\|verbs.*update\|verbs.*delete\|verbs.*patch" | head -50
+
+    # Check for roles with secrets access
+    echo -e "\n=== Roles with secrets access ==="
+    kubectl get roles,clusterroles -A -o yaml | grep -B 5 -A 10 "secrets" | grep -B 10 -A 10 "verbs"
+
+    # Check for roles with exec access
+    echo -e "\n=== Roles with pod exec access ==="
+    kubectl get roles,clusterroles -A -o yaml | grep -B 5 -A 10 "pods/exec\|pods/attach" | grep -B 10 -A 10 "verbs"
+  rbac-audit-report.sh: |
+    #!/bin/bash
+    echo "Generating RBAC audit report..."
+
+    # Create a temporary directory for audit results
+    AUDIT_DIR="/tmp/rbac-audit-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p $AUDIT_DIR
+
+    echo "Exporting all RBAC configurations..."
+    kubectl get clusterroles,clusterrolebindings,roles,rolebindings -A -o yaml > $AUDIT_DIR/all-rbac.yaml
+
+    echo "Exporting ServiceAccounts..."
+    kubectl get serviceaccounts -A -o yaml > $AUDIT_DIR/serviceaccounts.yaml
+
+    echo "Checking for privileged access patterns..."
+    # Find ServiceAccounts with cluster-admin access
+    kubectl get clusterrolebindings -o yaml | grep -B 10 -A 5 "cluster-admin" > $AUDIT_DIR/cluster-admin-bindings.txt
+
+    # Find all bindings with secrets access
+    kubectl get roles,clusterroles -A -o yaml | grep -B 10 -A 15 "secrets" > $AUDIT_DIR/secrets-access.txt
+
+    echo "Audit report saved to: $AUDIT_DIR"
+    echo "Files created:"
+    ls -la $AUDIT_DIR
+
+---
+# RBAC Verification Pod Template
+# Use this pod to test RBAC permissions in a controlled environment
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rbac-verification-pod
+  namespace: default
+  labels:
+    app: rbac-verifier
+spec:
+  serviceAccountName: default  # Replace with specific SA for testing
+  containers:
+  - name: rbac-verifier
+    image: bitnami/kubectl:latest
+    command:
+    - /bin/bash
+    - -c
+    - |
+      # Run RBAC verification commands
+      echo "=== RBAC Permission Verification ==="
+      echo "Current context:"
+      kubectl config current-context
+      echo ""
+
+      echo "Testing basic permissions..."
+      echo "Can list pods? $(kubectl auth can-i list pods)"
+      echo "Can get nodes? $(kubectl auth can-i get nodes)"
+      echo "Can create deployments? $(kubectl auth can-i create deployments)"
+      echo "Can get secrets? $(kubectl auth can-i get secrets)"
+      echo ""
+
+      echo "Detailed permission list:"
+      kubectl auth can-i --list
+      echo ""
+
+      echo "Testing specific resource access:"
+      kubectl auth can-i get pods --all-namespaces
+      kubectl auth can-i get configmaps --all-namespaces
+      echo ""
+
+      echo "Verification complete."
+    volumeMounts:
+    - name: kubectl-config
+      mountPath: /root/.kube
+      readOnly: true
+  volumes:
+  - name: kubectl-config
+    projected:
+      sources:
+      - secret:
+          name: kubectl-config  # This would need to be created separately
+  restartPolicy: Never
+
+---
+# RBAC Security Checklist
+# Use this checklist to audit RBAC configurations:
+
+# 1. ServiceAccount Checks
+# - [ ] Each application has its own dedicated ServiceAccount
+# - [ ] ServiceAccount tokens are properly managed (automountServiceAccountToken settings)
+# - [ ] ServiceAccounts follow principle of least privilege
+
+# 2. Role/ClusterRole Checks
+# - [ ] No wildcard permissions (*)
+# - [ ] No excessive verb permissions (avoid create/update/delete unless necessary)
+# - [ ] No excessive resource permissions (avoid secrets unless necessary)
+# - [ ] Namespace-scoped Roles preferred over ClusterRoles when possible
+
+# 3. RoleBinding/ClusterRoleBinding Checks
+# - [ ] Proper subjects linked to roles
+# - [ ] No anonymous access granted
+# - [ ] No system:masters group access unless necessary
+# - [ ] Proper namespace scoping
+
+# 4. Permission Verification
+# - [ ] Verified using kubectl auth can-i commands
+# - [ ] Tested in non-production environment first
+# - [ ] Audited regularly for unnecessary permissions
+
+# 5. Security Monitoring
+# - [ ] RBAC changes monitored in cluster events
+# - [ ] Permission escalation attempts logged
+# - [ ] Regular audits scheduled

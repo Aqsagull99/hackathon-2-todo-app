@@ -1,0 +1,22 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      # Example using direct value (NOT RECOMMENDED for production)
+      # value: "postgres://username:password@host:5432/database?sslmode=require"
+
+      # RECOMMENDED: Use Kubernetes Secret reference
+      secretKeyRef:
+        name: neon-db-secret
+        key: connection-string
+    - name: tableName
+      value: "dapr_state"
+    - name: metadataTableName
+      value: "dapr_metadata"
+    - name: cleanupIntervalInSeconds
+      value: "3600"

@@ -71,12 +71,20 @@ yarn-error.log*
 *.bak
 *.tmp
 
+# Kubernetes & Cloud Credentials (NEVER commit!)
+*kubeconfig*.yaml
+*kubeconfig*.yml
+*.kubeconfig
+todo-cluster-kubeconfig.yaml
+*.Zone.Identifier
 
 # System
 .*
 !.gitignore
 !.claude/
+ phase-two
 !.claude/**
+main
 
 # Python
 __pycache__/
@@ -96,3 +104,4 @@ node_modules/
 .cache/
 
 
+todo-cluster-kubeconfig.yaml

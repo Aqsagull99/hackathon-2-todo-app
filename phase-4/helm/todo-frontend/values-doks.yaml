@@ -1,0 +1,44 @@
+replicaCount: 3
+
+image:
+  repository: registry.digitalocean.com/todo/frontend
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: todo-frontend-tls
+      hosts:
+        - todo-app.example.com
+
+dapr:
+  enabled: true
+  appId: "todo-frontend"
+  appPort: "3000"
+  logLevel: "info"

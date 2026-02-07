@@ -1,0 +1,41 @@
+# LimitRange Template
+# Apply to namespace to set default resource limits
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: PLACEHOLDER_LIMIT_RANGE_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+spec:
+  limits:
+  # Container resource limits
+  - type: Container
+    max:
+      cpu: "PLACEHOLDER_MAX_CPU"
+      memory: PLACEHOLDER_MAX_MEMORY
+    min:
+      cpu: "PLACEHOLDER_MIN_CPU"
+      memory: PLACEHOLDER_MIN_MEMORY
+    default:
+      cpu: "PLACEHOLDER_DEFAULT_CPU"
+      memory: PLACEHOLDER_DEFAULT_MEMORY
+    defaultRequest:
+      cpu: "PLACEHOLDER_DEFAULT_REQUEST_CPU"
+      memory: PLACEHOLDER_DEFAULT_REQUEST_MEMORY
+    maxLimitRequestRatio:
+      cpu: "PLACEHOLDER_CPU_RATIO"
+      memory: "PLACEHOLDER_MEMORY_RATIO"
+  # Pod resource limits
+  - type: Pod
+    max:
+      cpu: "PLACEHOLDER_MAX_POD_CPU"
+      memory: PLACEHOLDER_MAX_POD_MEMORY
+    min:
+      cpu: "PLACEHOLDER_MIN_POD_CPU"
+      memory: PLACEHOLDER_MIN_POD_MEMORY
+  # PersistentVolumeClaim limits
+  - type: PersistentVolumeClaim
+    min:
+      storage: PLACEHOLDER_MIN_STORAGE
+    max:
+      storage: PLACEHOLDER_MAX_STORAGE

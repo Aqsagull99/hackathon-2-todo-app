@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: production
+  namespace: argocd
+spec:
+  description: Production project with restricted permissions
+  sourceRepos:
+  - https://github.com/mycompany/production-apps.git
+  destinations:
+  - namespace: production
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  namespaceResourceWhitelist:
+  - group: 'apps'
+    kind: Deployment
+  - group: 'apps'
+    kind: StatefulSet
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: ConfigMap
+  roles:
+  - name: prod-admins
+    description: Production administrators
+    policies:
+    - p, proj:production:prod-admins, applications, *, production/*, allow
+    groups:
+    - prod-admins@example.com
+  - name: ci-cd
+    description: CI/CD system access
+    policies:
+    - p, proj:production:ci-cd, applications, sync, production/*, allow
+    - p, proj:production:ci-cd, applications, update, production/*, allow
+    jwtTokens:
+    - iat: 1620000000

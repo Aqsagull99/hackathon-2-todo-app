@@ -1,0 +1,89 @@
+# Kubernetes Service Template
+# Before applying, verify cluster connectivity:
+# kubectl cluster-info
+# kubectl get nodes
+# kubectl config current-context
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: PLACEHOLDER_APP_NAME-service
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    version: v1.0.0
+  annotations:
+    # Service annotations for load balancer configuration
+    # service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    # service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    # service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+    # service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+spec:
+  # Service type selection:
+  # ClusterIP: Internal cluster access (default)
+  # NodePort: External access via Node IP and static port
+  # LoadBalancer: External access via cloud provider load balancer
+  # ExternalName: Maps to external DNS name
+  type: ClusterIP
+  selector:
+    app: PLACEHOLDER_APP_NAME
+    # Ensure label selectors match your deployment labels
+    version: v1.0.0
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http
+      # nodePort: 30080  # Uncomment for NodePort service type (30000-32767 range)
+  # sessionAffinity: ClientIP  # Uncomment for session affinity (use with caution)
+  # loadBalancerSourceRanges:  # Uncomment to restrict external access
+  # - 10.0.0.0/8
+  # - 192.168.0.0/16
+---
+# Headless service for StatefulSets or direct Pod DNS discovery
+apiVersion: v1
+kind: Service
+metadata:
+  name: PLACEHOLDER_APP_NAME-headless
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    version: v1.0.0
+spec:
+  # clusterIP: None makes this a headless service
+  # No load balancing, direct Pod access for StatefulSets
+  clusterIP: None
+  selector:
+    app: PLACEHOLDER_APP_NAME
+    # Ensure label selectors match your StatefulSet labels
+    version: v1.0.0
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http
+  type: ClusterIP
+---
+# Example of service with matchExpressions for complex selectors
+apiVersion: v1
+kind: Service
+metadata:
+  name: PLACEHOLDER_APP_NAME-advanced-selector
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    version: v1.0.0
+spec:
+  type: ClusterIP
+  selector:
+    app: PLACEHOLDER_APP_NAME
+    # Additional matchExpressions for complex logic
+    matchExpressions:
+    - key: environment
+      operator: In
+      values: ["production", "staging"]
+    - key: version
+      operator: NotIn
+      values: ["canary", "test"]
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http

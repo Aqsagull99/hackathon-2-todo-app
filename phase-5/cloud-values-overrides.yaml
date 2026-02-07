@@ -1,0 +1,163 @@
+# Cloud Environment Overrides for Phase V Deployment
+# Adjusted for DigitalOcean Kubernetes cloud environment
+#
+# SECURITY NOTICE: This file does NOT contain any hardcoded secrets.
+# All secrets must be created separately using kubectl or the deployment script.
+#
+# Usage:
+#   helm install todo-backend ./helm/todo-backend -f cloud-values-overrides.yaml
+#
+# Prerequisites:
+#   1. Create secrets first:
+#      kubectl create secret generic backend-todo-backend-secrets \
+#        --from-literal=database-url="<DATABASE_URL>" \
+#        --from-literal=jwt-secret="<JWT_SECRET>" \
+#        --from-literal=openrouter-api-key="<API_KEY>"
+
+---
+# Backend configuration overrides
+backend:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/todo/backend
+    tag: latest
+    pullPolicy: Always
+
+  # Environment variables (non-sensitive)
+  env:
+    - name: PYTHONPATH
+      value: "."
+    - name: LOG_LEVEL
+      value: "info"
+    - name: ENVIRONMENT
+      value: "production"
+
+  # Secret references (actual secrets created separately)
+  secrets:
+    # Reference to pre-created secret
+    name: backend-todo-backend-secrets
+    keys:
+      databaseUrl: database-url
+      jwtSecret: jwt-secret
+      openrouterApiKey: openrouter-api-key
+
+  # Resource limits for cloud environment
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  # Health check configuration (adjusted for cloud latency)
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Service configuration
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8000
+    annotations:
+      # DigitalOcean Load Balancer annotations
+      service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-interval-seconds: "10"
+
+---
+# Frontend configuration overrides
+frontend:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/todo/frontend
+    tag: latest
+    pullPolicy: Always
+
+  # Environment variables
+  env:
+    - name: NODE_ENV
+      value: "production"
+    # Backend API URL - should be updated after backend service gets external IP
+    - name: NEXT_PUBLIC_API_URL
+      value: "http://<BACKEND_LOAD_BALANCER_IP>"
+    - name: BETTER_AUTH_URL
+      value: "http://<FRONTEND_LOAD_BALANCER_IP>"
+
+  # Secret references
+  secrets:
+    name: frontend-todo-frontend-secrets
+    keys:
+      betterAuthSecret: better-auth-secret
+
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  # Health checks
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 45
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 45
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Service configuration
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+    annotations:
+      service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/"
+      service.beta.kubernetes.io/do-loadbalancer-healthcheck-interval-seconds: "10"
+
+---
+# Instructions for creating secrets:
+#
+# Backend secrets:
+# kubectl create secret generic backend-todo-backend-secrets \
+#   --from-literal=database-url="postgresql+asyncpg://USER:PASS@HOST/DB?ssl=require" \
+#   --from-literal=jwt-secret="YOUR_JWT_SECRET" \
+#   --from-literal=openrouter-api-key="sk-or-v1-YOUR_API_KEY"
+#
+# Frontend secrets:
+# kubectl create secret generic frontend-todo-frontend-secrets \
+#   --from-literal=better-auth-secret="YOUR_AUTH_SECRET"
+#
+# To apply:
+# helm upgrade --install todo-backend ./helm/todo-backend -f cloud-values-overrides.yaml
+# helm upgrade --install todo-frontend ./helm/todo-frontend -f cloud-values-overrides.yaml

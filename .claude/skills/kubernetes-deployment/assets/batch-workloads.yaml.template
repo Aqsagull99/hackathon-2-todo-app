@@ -1,0 +1,442 @@
+# Kubernetes Batch Workloads Template
+# This template provides examples for Jobs and CronJobs with best practices
+
+---
+# Basic Job Template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: PLACEHOLDER_JOB_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: batch
+spec:
+  # Number of successful completions required (default: 1)
+  completions: 1
+
+  # Maximum number of pods running simultaneously (default: 1)
+  parallelism: 1
+
+  # Number of retries before marking job as failed (default: 6)
+  backoffLimit: 6
+
+  # Time limit for job execution (optional)
+  activeDeadlineSeconds: 3600  # 1 hour
+
+  # Time to live after job finishes (optional)
+  ttlSecondsAfterFinished: 86400  # 24 hours
+
+  # Pod template for the job
+  template:
+    metadata:
+      labels:
+        app: PLACEHOLDER_APP_NAME
+        job: PLACEHOLDER_JOB_NAME
+    spec:
+      restartPolicy: Never  # For jobs, typically Never or OnFailure
+      containers:
+      - name: batch-processor
+        image: PLACEHOLDER_IMAGE_NAME:PLACEHOLDER_IMAGE_TAG
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "Starting batch job at $(date)"
+
+          # Add your batch processing logic here
+          echo "Processing data..."
+          # Example processing command
+          # process_data.sh --input /data/input --output /data/output
+
+          echo "Batch job completed at $(date)"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: JOB_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+---
+# Indexed Job Template for coordinated processing
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: PLACEHOLDER_INDEXED_JOB_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: indexed-batch
+spec:
+  # Completion mode for indexed jobs
+  completionMode: Indexed
+  # Number of completions required
+  completions: 5
+  # Parallel execution of up to 2 pods
+  parallelism: 2
+  # Pod replacement policy
+  podReplacementPolicy: TerminatingOrFailed
+
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: indexed-processor
+        image: PLACEHOLDER_IMAGE_NAME:PLACEHOLDER_IMAGE_TAG
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          # Get the completion index for ordered processing
+          INDEX=$JOB_COMPLETION_INDEX
+          echo "Processing indexed job ${INDEX}"
+
+          # Process specific data based on index
+          case $INDEX in
+            0) DATA_FILE="dataset-part-0.csv" ;;
+            1) DATA_FILE="dataset-part-1.csv" ;;
+            2) DATA_FILE="dataset-part-2.csv" ;;
+            *) DATA_FILE="dataset-part-${INDEX}.csv" ;;
+          esac
+
+          # Process the data file
+          echo "Processing data file: $DATA_FILE"
+          # Add your processing logic here
+          # process_data.sh --file $DATA_FILE
+
+          echo "Completed indexed job ${INDEX}"
+        env:
+        - name: JOB_COMPLETION_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+# AI/ML Training Job Template with GPU resources
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: PLACEHOLDER_ML_TRAINING_JOB_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: ml-training
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 3
+  activeDeadlineSeconds: 43200  # 12 hours for training
+
+  template:
+    spec:
+      restartPolicy: Never
+      # Node affinity for GPU resources
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-type
+                operator: In
+                values: ["gpu-node"]
+      containers:
+      - name: ml-trainer
+        image: PLACEHOLDER_ML_IMAGE_NAME:PLACEHOLDER_ML_IMAGE_TAG
+        command: ["python", "train_model.py"]
+        args:
+        - "--epochs=50"
+        - "--batch-size=32"
+        - "--learning-rate=0.001"
+        env:
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"  # Use first GPU
+        - name: TRAINING_JOB_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1  # Request 1 GPU
+          limits:
+            memory: "16Gi"
+            cpu: "8000m"
+            nvidia.com/gpu: 1  # Limit to 1 GPU
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        - name: dataset-storage
+          mountPath: /data/datasets
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: dataset-storage
+        persistentVolumeClaim:
+          claimName: dataset-pvc
+---
+# Basic CronJob Template
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: PLACEHOLDER_CRONJOB_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: scheduled-batch
+spec:
+  # Cron schedule in standard format (minute hour day month weekday)
+  schedule: "0 2 * * *"  # Daily at 2 AM UTC
+
+  # Concurrency policy: Allow, Forbid, Replace
+  concurrencyPolicy: Forbid  # Don't allow concurrent runs
+
+  # Suspend the job (set to true to pause)
+  suspend: false
+
+  # Deadline for starting the job if it misses its schedule
+  startingDeadlineSeconds: 300  # 5 minutes
+
+  # Number of successful jobs to keep
+  successfulJobsHistoryLimit: 3
+
+  # Number of failed jobs to keep
+  failedJobsHistoryLimit: 1
+
+  # Timezone for the schedule (optional)
+  timeZone: "UTC"
+
+  # Job template that gets executed
+  jobTemplate:
+    spec:
+      backoffLimit: 5
+      activeDeadlineSeconds: 3600  # 1 hour timeout
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: scheduled-processor
+            image: PLACEHOLDER_SCHEDULED_IMAGE_NAME:PLACEHOLDER_SCHEDULED_IMAGE_TAG
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              echo "Starting scheduled job at $(date)"
+
+              # Add your scheduled processing logic here
+              # Example: backup, report generation, cleanup
+              echo "Running scheduled task..."
+
+              # Perform the scheduled operation
+              # backup_data.sh --destination s3://bucket/backup
+
+              echo "Scheduled job completed at $(date)"
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "1000m"
+              limits:
+                memory: "2Gi"
+                cpu: "2000m"
+            env:
+            - name: SCHEDULED_TIME
+              value: "$(date)"
+            - name: JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+---
+# Advanced CronJob with Multiple Schedules
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: PLACEHOLDER_ADVANCED_CRONJOB_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: advanced-scheduled
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+  # Allow concurrent runs (use with caution)
+  concurrencyPolicy: Allow
+
+  # Longer deadline for complex processing
+  startingDeadlineSeconds: 600  # 10 minutes
+
+  # Keep more history for debugging
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+
+  # Timezone in US Eastern
+  timeZone: "America/New_York"
+
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 7200  # 2 hours for complex processing
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: advanced-processor
+            image: PLACEHOLDER_ADVANCED_IMAGE_NAME:PLACEHOLDER_ADVANCED_IMAGE_TAG
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              echo "Starting advanced processing at $(date)"
+
+              # Determine the type of processing based on hour
+              HOUR=$(date +%H)
+              if [ $HOUR -eq 2 ]; then
+                echo "Running daily maintenance"
+                python daily_maintenance.py
+              elif [ $HOUR -eq 8 ]; then
+                echo "Running morning report generation"
+                python generate_reports.py --report-type=morning
+              elif [ $HOUR -eq 14 ]; then
+                echo "Running afternoon analytics"
+                python run_analytics.py --time-of-day=afternoon
+              elif [ $HOUR -eq 20 ]; then
+                echo "Running evening cleanup"
+                python cleanup_tasks.py
+              fi
+
+              echo "Processing completed at $(date)"
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "2000m"
+              limits:
+                memory: "4Gi"
+                cpu: "4000m"
+            volumeMounts:
+            - name: logs-storage
+              mountPath: /var/log/processing
+          volumes:
+          - name: logs-storage
+            persistentVolumeClaim:
+              claimName: logs-pvc
+---
+# Batch Inference Job for AI/ML Models
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: PLACEHOLDER_BATCH_INFERENCE_NAME
+  namespace: PLACEHOLDER_NAMESPACE
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    workload-type: ml-inference
+spec:
+  # Process multiple datasets in parallel
+  completions: 10
+  parallelism: 3  # Process 3 datasets simultaneously
+  backoffLimit: 5
+  activeDeadlineSeconds: 3600  # 1 hour per inference task
+
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: inference-runner
+        image: PLACEHOLDER_INFERENCE_IMAGE_NAME:PLACEHOLDER_INFERENCE_IMAGE_TAG
+        command: ["python", "run_inference.py"]
+        args:
+        - "--input-dir=/data/input"
+        - "--output-dir=/data/output"
+        - "--model-path=/models/current-model.pt"
+        env:
+        - name: INFER_DATASET_INDEX
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: input-data
+          mountPath: /data/input
+        - name: output-data
+          mountPath: /data/output
+        - name: models
+          mountPath: /models
+      volumes:
+      - name: input-data
+        persistentVolumeClaim:
+          claimName: input-data-pvc
+      - name: output-data
+        persistentVolumeClaim:
+          claimName: output-data-pvc
+      - name: models
+        persistentVolumeClaim:
+          claimName: model-pvc
+
+---
+# Batch Workload Management Commands
+# Use these commands to manage and monitor batch workloads:
+
+# 1. Create a job
+# kubectl create job my-job --from=cronjob/my-cronjob
+
+# 2. Check job status
+# kubectl get jobs
+# kubectl describe job <job-name>
+
+# 3. Check pods created by the job
+# kubectl get pods --selector=job-name=<job-name>
+
+# 4. Monitor job progress
+# kubectl get jobs <job-name> -w
+
+# 5. Check job logs
+# kubectl logs -l job-name=<job-name>
+
+# 6. Scale a job (change parallelism)
+# kubectl patch job <job-name> -p '{"spec":{"parallelism":5}}'
+
+# 7. Delete a job (also deletes associated pods)
+# kubectl delete job <job-name>
+
+# 8. Create a cronjob
+# kubectl create cronjob my-cronjob --schedule="0 */4 * * *" --image=my-image:latest
+
+# 9. List cronjobs
+# kubectl get cronjobs
+
+# 10. Suspend a cronjob
+# kubectl patch cronjob <cronjob-name> -p '{"spec":{"suspend":true}}'
+
+# 11. Resume a cronjob
+# kubectl patch cronjob <cronjob-name> -p '{"spec":{"suspend":false}}'
+
+# 12. Update cronjob schedule
+# kubectl patch cronjob <cronjob-name> -p '{"spec":{"schedule":"0 3 * * *"}}'
+
+# 13. Get job completions status
+# kubectl get job <job-name> -o jsonpath='{.status.succeeded}'
+
+# 14. Check job events
+# kubectl get events --field-selector involvedObject.kind=Job,involvedObject.name=<job-name>
+
+# 15. Rollback a failed job by deleting and recreating
+# kubectl delete job <job-name>
+# kubectl create job <job-name> --image=<new-image>

@@ -1,0 +1,170 @@
+# Kubernetes Deployment Template
+# Before applying, verify cluster connectivity:
+# kubectl cluster-info
+# kubectl get nodes
+# kubectl config current-context
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: PLACEHOLDER_APP_NAME
+  labels:
+    app: PLACEHOLDER_APP_NAME
+    version: v1.0.0
+  annotations:
+    # Add deployment annotations for better observability
+    deployment.kubernetes.io/revision: "1"
+    # Track deployment with Git commit SHA or release version
+    deployment.release.version: "v1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  revisionHistoryLimit: 10  # Keep 10 revisions for rollback capability
+  progressDeadlineSeconds: 600  # Time to wait for deployment progress before marking as failed
+  selector:
+    matchLabels:
+      app: PLACEHOLDER_APP_NAME
+  template:
+    metadata:
+      labels:
+        app: PLACEHOLDER_APP_NAME
+      annotations:
+        # Timestamp annotation to trigger rollout on template changes
+        deployment.timestamp: "{{ timestamp }}"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+      containers:
+      - name: PLACEHOLDER_APP_NAME
+        image: PLACEHOLDER_IMAGE_NAME:PLACEHOLDER_IMAGE_TAG
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        # Service discovery environment variables
+        - name: SERVICE_HOST
+          value: "PLACEHOLDER_APP_NAME-service.default.svc.cluster.local"
+        - name: SERVICE_PORT
+          value: "80"
+        # Access resource limits from within the container for proper configuration
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: LIMITS_MEMORY
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
+        - name: REQUESTS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: requests.cpu
+        - name: REQUESTS_MEMORY
+          valueFrom:
+            resourceFieldRef:
+              resource: requests.memory
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Resource quality of service considerations:
+        # - For Guaranteed QoS: set limits equal to requests for all resources
+        # - For Burstable QoS: set limits higher than requests
+        # - For BestEffort QoS: omit both requests and limits
+        env:
+        # Access resource limits from within the container for proper configuration
+        - name: LIMITS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: LIMITS_MEMORY
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
+        - name: REQUESTS_CPU
+          valueFrom:
+            resourceFieldRef:
+              resource: requests.cpu
+        - name: REQUESTS_MEMORY
+          valueFrom:
+            resourceFieldRef:
+              resource: requests.memory
+        # Environment information for cross-namespace communication
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      # Optional: Add node selection constraints
+      # nodeSelector:
+      #   kubernetes.io/os: linux
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #       - matchExpressions:
+      #         - key: kubernetes.io/os
+      #           operator: In
+      #           values:
+      #           - linux
